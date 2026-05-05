@@ -9,6 +9,7 @@ $current_page = $_GET['page'] ?? 'orders';
 
 require_once __DIR__ . '/../../db/connection.php';
 
+date_default_timezone_set('Asia/Manila');
 $stmt = $pdo->query("
     SELECT o.*, 
            GROUP_CONCAT(oi.name ORDER BY oi.id SEPARATOR '||') AS item_names,
@@ -16,7 +17,7 @@ $stmt = $pdo->query("
            GROUP_CONCAT(oi.quantity ORDER BY oi.id SEPARATOR '||') AS item_qtys
     FROM orders o
     LEFT JOIN order_items oi ON oi.order_id = o.id
-    WHERE o.status = 'pending'
+    WHERE status = 'pending'
     GROUP BY o.id
     ORDER BY o.created_at ASC
 ");
