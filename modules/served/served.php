@@ -9,7 +9,24 @@ $current_page = $_GET['page'] ?? 'served';
 
 require_once __DIR__ . '/../../db/connection.php';
 
-$stmt = $pdo->query("
+date_default_timezone_set('Asia/Manila');
+
+$now = new DateTime();
+
+// compute last Monday 2AM
+$lastReset = new DateTime();
+$lastReset->modify('monday this week');
+$lastReset->setTime(2, 0, 0);
+
+// kung di pa umaabot ng Monday 2AM ngayon
+if ($now < $lastReset) {
+    $lastReset->modify('-7 days');
+}
+
+$reset_datetime = $lastReset->format('Y-m-d H:i:s');
+
+// ✅ TAMANG QUERY (prepare lang, walang query())
+$stmt = $pdo->prepare("
     SELECT o.*, 
            GROUP_CONCAT(oi.name ORDER BY oi.id SEPARATOR '||') AS item_names,
            GROUP_CONCAT(oi.price ORDER BY oi.id SEPARATOR '||') AS item_prices,
@@ -17,10 +34,12 @@ $stmt = $pdo->query("
     FROM orders o
     LEFT JOIN order_items oi ON oi.order_id = o.id
     WHERE o.status = 'served'
+    AND o.served_at >= ?
     GROUP BY o.id
     ORDER BY o.served_at DESC, o.created_at DESC
 ");
 
+$stmt->execute([$reset_datetime]);
 $served_orders = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
@@ -70,6 +89,10 @@ $served_orders = $stmt->fetchAll();
 <div class="served-page">
 
     <div class="served-title">Served</div>
+
+    <div style="font-size:12px; color:#777; margin-bottom:10px;">
+    Showing served orders since <?= date('M d, Y h:i A', strtotime($reset_datetime)) ?>
+</div>
 
     <div class="served-controls">
         <div class="served-search-wrapper">

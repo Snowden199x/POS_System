@@ -392,6 +392,10 @@
   let selectedPaymentMethod = "all";
   let selectedStatus = "all";
 
+    // ── FILTER DATE STATES ─────────────────────────────────────────────────
+let selectedDateFrom = "";
+let selectedDateTo = "";
+
   // ── FILTER CHIP STYLE ──────────────────────────────────────────────────
   function activateChip(chip) {
     chip.style.background = GOLD;
@@ -994,15 +998,14 @@ selectedDateTo = to;
         row.cells[2];
       const paymentCell =
         row.cells[3];
-      const statusCell =
-        row.cells[4];
+const statusCell = row.cells[5];
 
       if (dateCell) {
         const rawText =
           dateCell.textContent.trim();
 
-        const rowDate =
-          new Date(rawText);
+const parsed = Date.parse(rawText);
+const rowDate = isNaN(parsed) ? null : new Date(parsed);
 
         if (!isNaN(rowDate)) {
           const rowDateOnly =
@@ -1082,9 +1085,6 @@ selectedDateTo = to;
     closeFilterModal();
   };
 
-  // ── FILTER DATE STATES ─────────────────────────────────────────────────
-let selectedDateFrom = "";
-let selectedDateTo = "";
 
 // ── CLEAR FILTER ───────────────────────────────────────────────────────
 window.clearFilter = function () {
@@ -1656,4 +1656,140 @@ window.clearFilter = function () {
   renderBarChart("weekly");
   renderSectionBarChart();
   initAnnualClick();
+
+  /* ── ORDER OVERVIEW MODAL ───────────────────────────── */
+
+window.openOrderModal = function(orderData) {
+
+  if (document.getElementById("order-modal-overlay")) return;
+
+  const overlay = document.createElement("div");
+  overlay.className = "order-modal-overlay";
+  overlay.id = "order-modal-overlay";
+
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closeOrderModal();
+  });
+
+  const itemsHTML = (orderData.items || []).map(item => `
+    <div class="order-item">
+      <span>${item.qty}x ${item.name}</span>
+      <span>₱${Number(item.price).toLocaleString()}</span>
+    </div>
+  `).join("");
+
+  overlay.innerHTML = `
+    <div class="order-modal">
+
+      <div class="order-modal-top">
+        <div class="order-number">#${orderData.id}</div>
+        <div class="order-date">${orderData.date}</div>
+        <div class="order-title">Order Overview</div>
+
+        <div class="order-badges">
+          <div class="badge badge-served">${orderData.status}</div>
+          <div class="badge badge-dinein">${orderData.type}</div>
+        </div>
+      </div>
+
+      <div class="order-divider"></div>
+
+      <div class="order-items">
+        ${itemsHTML}
+      </div>
+
+      <div class="order-divider"></div>
+
+      <div class="order-summary">
+
+        <div class="summary-row">
+          <span>Mode of Payment</span>
+          <span>${orderData.payment}</span>
+        </div>
+
+        <div class="summary-row">
+          <span>Subtotal</span>
+          <span>₱${orderData.subtotal}</span>
+        </div>
+
+        <div class="summary-row">
+          <span>Discount</span>
+          <span>${orderData.discount || "-"}</span>
+        </div>
+
+        <div class="summary-total">
+          <span>Total</span>
+          <span class="total-amount">₱${orderData.total}</span>
+        </div>
+
+      </div>
+
+      <div class="order-footer">
+        Ordered on ${orderData.ordered_at} • Served on ${orderData.served_at}
+      </div>
+
+      <div class="order-close-wrap">
+        <button class="order-close-btn" onclick="closeOrderModal()">Close</button>
+      </div>
+
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+};
+
+window.closeOrderModal = function() {
+  const modal = document.getElementById("order-modal-overlay");
+  if (modal) modal.remove();
+};
+
+
+/* ── AUTO ATTACH TO TABLE ROWS ───────────────────────── */
+
+document.querySelectorAll("#orders-table tbody tr").forEach(row => {
+
+  row.style.cursor = "pointer";
+
+row.addEventListener("click", () => {
+let items = [];
+
+try {
+  const raw = row.getAttribute("data-items");
+
+  if (raw) {
+    const parsed = JSON.parse(raw);
+
+    if (Array.isArray(parsed)) {
+      items = parsed.map(i => ({
+        qty: i.qty,
+        name: i.name,
+        price: i.price
+      }));
+    }
+  }
+
+} catch (e) {
+  console.error("Invalid JSON:", e);
+}
+
+  const orderData = {
+    id: row.cells[0]?.textContent.trim() || "—",
+    date: row.cells[1]?.textContent.trim() || "",
+    type: row.cells[2]?.textContent.trim() || "",
+    payment: row.cells[3]?.textContent.trim() || "",
+    total: (row.cells[4]?.textContent || "0").replace(/[₱,]/g, ""),
+    status: row.cells[5]?.textContent.trim() || "",
+
+    subtotal: row.cells[4]?.textContent.replace("₱","") || "0",
+
+    ordered_at: row.cells[1]?.textContent.trim(),
+    served_at: row.cells[1]?.textContent.trim(),
+
+    items: items
+  };
+
+  openOrderModal(orderData);
+});
+
+});
 })();

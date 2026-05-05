@@ -83,7 +83,10 @@ if ($sidebar_open && $selected_section) {
 
     $sec_stmt = $pdo->prepare("
         SELECT o.id, o.created_at, o.order_type, o.payment_method, o.total, o.status, o.beeper_number,
-               GROUP_CONCAT(oi.name ORDER BY oi.id SEPARATOR ', ') as item_names
+               GROUP_CONCAT(
+  CONCAT(oi.quantity, 'x ', oi.name, '|', oi.price)
+  SEPARATOR ';;'
+) as items_data
         FROM orders o
         LEFT JOIN order_items oi ON oi.order_id = o.id
         WHERE YEAR(o.created_at)=? AND MONTH(o.created_at)=? AND o.status IN ($status_filter)
@@ -319,22 +322,50 @@ $bar_json     = isset($bar_data) ? json_encode($bar_data) : '[]';
                                 <th>Status</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <?php if (empty($section_orders)): ?>
-                            <tr><td colspan="6" class="table-empty">No records found.</td></tr>
-                            <?php else: ?>
-                            <?php foreach ($section_orders as $o): ?>
-                            <tr>
-                                <td><?= $o['id'] ?></td>
-                                <td><?= date('M j, Y g:i A', strtotime($o['created_at'])) ?></td>
-                                <td><?= $o['order_type'] === 'dine-in' ? 'Dine in' : 'Take out' ?></td>
-                                <td><?= ucfirst($o['payment_method']) ?></td>
-                                <td>₱<?= number_format($o['total'], 0) ?></td>
-                                <td><span class="status-badge status-<?= $o['status'] ?>"><?= ucfirst($o['status']) ?></span></td>
-                            </tr>
-                            <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
+                  <tbody>
+<?php if (empty($section_orders)): ?>
+<tr>
+    <td colspan="6" class="table-empty">No records found.</td>
+</tr>
+
+<?php else: ?>
+<?php foreach ($section_orders as $o): ?>
+
+<?php
+$items = [];
+
+if (!empty($o['items_data'])) {
+    $rawItems = explode(';;', $o['items_data']);
+
+    foreach ($rawItems as $item) {
+        list($left, $price) = explode('|', $item);
+        list($qty, $name) = explode('x ', $left);
+
+        $items[] = [
+            "qty" => (int)$qty,
+            "name" => $name,
+            "price" => (float)$price
+        ];
+    }
+}
+?>
+
+<tr data-items='<?= htmlspecialchars(json_encode($items), ENT_QUOTES, 'UTF-8') ?>'>
+    <td><?= $o['beeper_number'] ?></td>
+    <td><?= date('M j, Y g:i A', strtotime($o['created_at'])) ?></td>
+    <td><?= $o['order_type'] === 'dine-in' ? 'Dine in' : 'Take out' ?></td>
+    <td><?= ucfirst($o['payment_method']) ?></td>
+    <td>₱<?= number_format($o['total'], 0) ?></td>
+    <td>
+        <span class="status-badge status-<?= $o['status'] ?>">
+            <?= ucfirst($o['status']) ?>
+        </span>
+    </td>
+</tr>
+
+<?php endforeach; ?>
+<?php endif; ?>
+</tbody>
                     </table>
                 </div>
             </div>
@@ -482,5 +513,8 @@ $bar_json     = isset($bar_data) ? json_encode($bar_data) : '[]';
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="<?= $base_url ?>modules/statistics/statistics.js"></script>
+
+
+
 </body>
 </html>
