@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/statistics_ajax.php';
 if (!isset($_SESSION["logged_in"])) {
     header("Location: ../../index.php");
     exit();
@@ -163,15 +164,6 @@ $bar_json     = json_encode($bar_data);
                 <img src="<?= $base_url ?>assets/images/profile.png" class="profile-icon" alt="Profile">
             </button>
             <div class="profile-dropdown" id="profile-dropdown">
-
-                <!-- Excel -->
-                <button class="dropdown-item" id="excel-btn">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2"/>
-                        <path d="M8 8l8 8M16 8l-8 8"/>
-                    </svg>
-                    Excel
-                </button>
 
                 <!-- Profile -->
                 <a href="index.php?page=profile" class="dropdown-item">
@@ -399,6 +391,7 @@ $bar_json     = json_encode($bar_data);
 
         <?php else: ?>
 
+        <!-- ── DASHBOARD ── -->
         <div class="dash-header">
             <button class="sidebar-toggle-btn" id="open-sidebar" onclick="openSidebar()">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -406,6 +399,24 @@ $bar_json     = json_encode($bar_data);
                 </svg>
             </button>
             <h1 class="dash-title">Statistics</h1>
+
+            <!-- ── ACTION BUTTONS (upper right) ── -->
+            <div class="dash-actions">
+                <button class="dash-action-btn dash-action-btn--live" id="live-orders-btn" onclick="openLiveOrders()">
+                    <span class="live-dot"></span>
+                    Live Orders
+                </button>
+                <button class="dash-action-btn dash-action-btn--excel" id="excel-export-btn" onclick="openExcelModal()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="8" y1="13" x2="16" y2="13"/>
+                        <line x1="8" y1="17" x2="16" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                    Excel Report
+                </button>
+            </div>
         </div>
 
         <section class="overview-section">
@@ -545,7 +556,7 @@ $bar_json     = json_encode($bar_data);
     const SELECTED_MONTH = <?= $selected_month ?>;
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="<?= $base_url ?>modules/statistics/statistics.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script><script src="<?= $base_url ?>modules/statistics/statistics.js"></script>
 
 </body>
 </html>

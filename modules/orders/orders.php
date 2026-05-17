@@ -300,10 +300,10 @@ $discount_map = [229=>45, 169=>33, 159=>31, 149=>29, 139=>27];
 <!-- VOID MODAL -->
 <div class="modal-overlay" id="voidModal">
     <div class="delete-box">
-        <div style="width:52px;height:52px;border-radius:50%;background:rgba(216,195,111,0.2);
-            display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#D8C36F" stroke-width="2.2">
-                <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+        <div class="void-icon">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#D8C36F" stroke-width="2.2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
             </svg>
         </div>
         <h3>Void Order?</h3>

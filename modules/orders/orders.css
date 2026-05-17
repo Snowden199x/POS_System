@@ -360,7 +360,93 @@
     background: #D8C36F;
     color: #1C3924;
 }
+/* =============================================
+   VOID MODAL
+============================================= */
 
+.delete-box {
+    background: var(--cream);
+    border-radius: 28px;
+    padding: 36px 32px;
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+    animation: modalPop 0.2s ease;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+.delete-box .void-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(216,195,111,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+.delete-box h3 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--green-100);
+    margin: 0;
+}
+
+.delete-box p {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin: 0;
+    max-width: 320px;
+}
+
+.delete-actions {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    margin-top: 8px;
+}
+
+.cancel-delete-btn {
+    flex: 1;
+    height: 48px;
+    border-radius: 999px;
+    border: 1.5px solid var(--gold-100);
+    background: transparent;
+    color: var(--green-100);
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.18s;
+}
+
+.cancel-delete-btn:hover {
+    background: rgba(216,195,111,0.1);
+}
+
+.confirm-void-btn {
+    flex: 1;
+    height: 48px;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    background: var(--gold-100);
+    color: var(--green-100);
+    transition: background 0.18s;
+}
+
+.confirm-void-btn:hover {
+    background: #c4af55;
+}
 /* =============================================
    EDIT MODAL — homepage order-panel style
 ============================================= */
