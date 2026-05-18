@@ -10,6 +10,10 @@ $current_page = 'statistics';
 
 require_once __DIR__ . '/../../db/connection.php';
 
+$stmt_user = $pdo->prepare("SELECT avatar FROM users WHERE id = 1");
+$stmt_user->execute();
+$nav_user = $stmt_user->fetch(PDO::FETCH_ASSOC);
+
 $selected_year    = isset($_GET['year'])    ? (int)$_GET['year']    : (int)date('Y');
 $selected_month   = isset($_GET['month'])   ? (int)$_GET['month']   : (int)date('m');
 $selected_section = isset($_GET['section']) ? $_GET['section']      : null;
@@ -161,7 +165,11 @@ $bar_json     = json_encode($bar_data);
         </div>
         <div class="profile-menu">
             <button id="profile-btn" class="profile-btn">
+            <?php if (!empty($nav_user['avatar'])): ?>
+                <img src="<?= htmlspecialchars($nav_user['avatar']) ?>" class="profile-icon" alt="Profile" style="object-fit:cover;border-radius:50%;">
+            <?php else: ?>
                 <img src="<?= $base_url ?>assets/images/profile.png" class="profile-icon" alt="Profile">
+            <?php endif; ?>
             </button>
             <div class="profile-dropdown" id="profile-dropdown">
 

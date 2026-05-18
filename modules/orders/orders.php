@@ -9,6 +9,10 @@ $current_page = $_GET['page'] ?? 'orders';
 
 require_once __DIR__ . '/../../db/connection.php';
 
+$stmt_user = $pdo->prepare("SELECT avatar FROM users WHERE id = 1");
+$stmt_user->execute();
+$nav_user = $stmt_user->fetch(PDO::FETCH_ASSOC);
+
 date_default_timezone_set('Asia/Manila');
 $stmt = $pdo->query("
     SELECT o.*, 
@@ -73,16 +77,13 @@ $discount_map = [229=>45, 169=>33, 159=>31, 149=>29, 139=>27];
         </div>
         <div class="profile-menu">
             <button id="profile-btn" class="profile-btn">
+            <?php if (!empty($nav_user['avatar'])): ?>
+                <img src="<?= htmlspecialchars($nav_user['avatar']) ?>" class="profile-icon" alt="Profile" style="object-fit:cover;border-radius:50%;">
+            <?php else: ?>
                 <img src="<?= $base_url ?>assets/images/profile.png" class="profile-icon" alt="Profile">
+            <?php endif; ?>
             </button>
             <div class="profile-dropdown" id="profile-dropdown">
-                <button class="dropdown-item" id="excel-btn">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2"/>
-                        <path d="M8 8l8 8M16 8l-8 8"/>
-                    </svg>
-                    Excel
-                </button>
                 <a href="index.php?page=profile" class="dropdown-item">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="7" r="4"/>

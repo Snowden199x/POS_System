@@ -8,7 +8,9 @@ $base_url = '/Github/POS_SYSTEM/';
 $current_page = $_GET['page'] ?? 'served';
 
 require_once __DIR__ . '/../../db/connection.php';
-
+$stmt_user = $pdo->prepare("SELECT avatar FROM users WHERE id = 1");
+$stmt_user->execute();
+$nav_user = $stmt_user->fetch(PDO::FETCH_ASSOC);
 date_default_timezone_set('Asia/Manila');
 
 $now = new DateTime();
@@ -38,6 +40,9 @@ $stmt = $pdo->prepare("
 
 $stmt->execute([$reset_datetime]);
 $served_orders = $stmt->fetchAll();
+$stmt_user = $pdo->prepare("SELECT avatar FROM users WHERE id = 1");
+$stmt_user->execute();
+$nav_user = $stmt_user->fetch(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -69,18 +74,13 @@ $served_orders = $stmt->fetchAll();
         </div>
         <div class="profile-menu">
             <button id="profile-btn" class="profile-btn">
+            <?php if (!empty($nav_user['avatar'])): ?>
+                <img src="<?= htmlspecialchars($nav_user['avatar']) ?>" class="profile-icon" alt="Profile" style="object-fit:cover;border-radius:50%;">
+            <?php else: ?>
                 <img src="<?= $base_url ?>assets/images/profile.png" class="profile-icon" alt="Profile">
+            <?php endif; ?>
             </button>
             <div class="profile-dropdown" id="profile-dropdown">
-
-                <!-- Excel -->
-                <button class="dropdown-item" id="excel-btn">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2"/>
-                        <path d="M8 8l8 8M16 8l-8 8"/>
-                    </svg>
-                    Excel
-                </button>
 
                 <!-- Profile -->
                 <a href="index.php?page=profile" class="dropdown-item">
