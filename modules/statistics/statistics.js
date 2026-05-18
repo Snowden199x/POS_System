@@ -254,30 +254,61 @@
 
   // Build a small year-selector + report-type popover anchored to the button
   window.openExcelModal = function () {
-    const btn = document.getElementById("excel-export-btn");
-    if (btn) {
+    if (document.getElementById("excel-year-picker")) return;
+
+    const currentYear = SELECTED_YEAR || new Date().getFullYear();
+    const overlay = document.createElement("div");
+    overlay.id = "excel-year-picker";
+    overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:999999;display:flex;align-items:center;justify-content:center;`;
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) overlay.remove();
+    });
+
+    overlay.innerHTML = `
+      <div style="background:#F4EFD7;border-radius:24px;padding:28px 32px;width:320px;font-family:Poppins,sans-serif;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <h3 style="margin:0 0 6px;color:#1C3924;font-size:17px;">📊 Export Excel Report</h3>
+        <p style="margin:0 0 20px;font-size:13px;color:#888;">Select year to export all months</p>
+        <label style="font-size:13px;font-weight:600;color:#1C3924;">Year</label>
+        <select id="ep-year" style="width:100%;margin:6px 0 24px;padding:10px 14px;border-radius:12px;border:1.5px solid #DDD3AF;font-family:Poppins,sans-serif;background:white;color:#1C3924;">
+          ${[2025, 2026, 2027, 2028].map((y) => `<option value="${y}" ${y === currentYear ? "selected" : ""}>${y}</option>`).join("")}
+        </select>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button onclick="document.getElementById('excel-year-picker').remove()" style="padding:10px 18px;border-radius:999px;border:1.5px solid #DDD3AF;background:#F8F4E4;color:#1C3924;font-weight:600;cursor:pointer;font-family:Poppins,sans-serif;">Cancel</button>
+          <button id="ep-download-btn" style="padding:10px 22px;border-radius:999px;border:none;background:#1C3924;color:white;font-weight:600;cursor:pointer;font-family:Poppins,sans-serif;">Download</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    document.getElementById("ep-download-btn").addEventListener("click", () => {
+      const year = parseInt(document.getElementById("ep-year").value);
+      const btn = document.getElementById("ep-download-btn");
       btn.disabled = true;
       btn.textContent = "Preparing...";
-    }
 
-    fetch("index.php?page=statistics&excel_report=1", {
-      headers: { "X-Requested-With": "XMLHttpRequest" },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        buildAllSheetsExcel(data);
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Excel Report`;
-        }
+      fetch(`index.php?page=statistics&excel_report=1&year=${year}`, {
+        headers: { "X-Requested-With": "XMLHttpRequest" },
       })
-      .catch(() => {
-        if (btn) {
+        .then((r) => r.json())
+        .then((data) => {
+          buildAllSheetsExcel(data);
+          document.getElementById("excel-year-picker").remove();
+        })
+        .catch(() => {
           btn.disabled = false;
-        }
-        alert("Failed to generate report. Please try again.");
-      });
+          btn.textContent = "Download";
+          alert("Failed to generate report.");
+        });
+    });
   };
+  function excelDate(dateStr) {
+    if (!dateStr) return "";
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    const epoch = new Date(Date.UTC(1899, 11, 30));
+    return Math.round((date - epoch) / 86400000);
+  }
   function buildAllSheetsExcel(data) {
     const wb = XLSX.utils.book_new();
     const mNames = [
@@ -306,7 +337,7 @@
       ws["!merges"] = [
         { s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } },
       ];
-      ws["!autofilter"] = { ref: `K3:K3` };
+      
       const range = XLSX.utils.decode_range(ws["!ref"]);
 
       for (let R = range.s.r; R <= range.e.r; R++) {
@@ -314,7 +345,14 @@
           const addr = XLSX.utils.encode_cell({ r: R, c: C });
           if (!ws[addr]) ws[addr] = { v: "", t: "s" };
           if (!ws[addr].s) ws[addr].s = {};
-
+          if (
+            R > 2 &&
+            (C === 10 || C === 11) &&
+            typeof ws[addr].v === "number"
+          ) {
+            ws[addr].t = "n";
+            ws[addr].z = "yyyy-mm-dd";
+          }
           // All cells: border + font
           ws[addr].s.border = {
             top: { style: "thin", color: { rgb: "D0C8A0" } },
@@ -357,7 +395,11 @@
             ws[addr].s.fill = {
               fgColor: { rgb: isEven ? "FFFBEF" : "FFFFFF" },
             };
-            ws[addr].s.alignment = { horizontal: "center", vertical: "center", wrapText: true };
+            ws[addr].s.alignment = {
+              horizontal: "center",
+              vertical: "center",
+              wrapText: true,
+            };
 
             // Status column coloring
             if (statusColIdx !== null && C === statusColIdx) {
@@ -404,8 +446,7 @@
 
       return ws;
     }
-
-    // ── SHEET 1: ORDERS ──────────────────────────────────────────────────
+    // ── SHEET 1: ORDERS (all orders, filterable by date) ─────────────────
     const orderHeaders = [
       "Order ID",
       "Beeper #",
@@ -431,18 +472,18 @@
       parseFloat(o.total || 0),
       parseFloat(o.change_amount || 0),
       ucfirst(o.status),
-      o.created_at ? o.created_at.split(" ")[0] : "",
+      o.created_at ? excelDate(o.created_at.split(" ")[0]) : "",
       o.served_at ? o.served_at.split(" ")[0] : "—",
     ]);
     const ws1 = makeSheet(
-      `TWIST & ROLL POS — Orders for ${mNames[month-1]} ${year}`,
+      `TWIST & ROLL POS — Orders ${year}`,
       orderHeaders,
       orderRows,
       [10, 10, 45, 12, 12, 12, 12, 12, 12, 12, 22, 22],
-      9, // status col index
+      9,
     );
+    ws1["!autofilter"] = { ref: `K3:K3` };
     XLSX.utils.book_append_sheet(wb, ws1, "Orders");
-
     // ── SHEET 2: WEEKLY ───────────────────────────────────────────────────
     const weeklyHeaders = [
       "Week #",

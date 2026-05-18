@@ -9,29 +9,31 @@ $current_page = 'profile';
 
 require_once __DIR__ . '/../../db/connection.php';
 
-$user = [
-    'id'        => 1,
-    'full_name' => $_SESSION['username'] ?? 'Admin',
-    'username'  => $_SESSION['username'] ?? 'admin',
-    'email'     => '',
-    'phone'     => '',
-    'status'    => 'active',
-    'avatar'    => '',
-];
+// Fetch user from DB
+$stmt = $pdo->prepare("SELECT * FROM users WHERE id = 1");
+$stmt->execute();
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
+if (!$user) {
+    $user = ['id'=>1,'full_name'=>'Admin','username'=>'admin',
+             'email'=>'','phone'=>'','status'=>'active','avatar'=>''];
+}
 
 $success_msg = '';
 $error_msg   = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
+    // edit_profile
     if (isset($_POST['action']) && $_POST['action'] === 'edit_profile') {
         $full_name = trim($_POST['full_name'] ?? '');
         $username  = trim($_POST['username']  ?? '');
         $email     = trim($_POST['email']     ?? '');
         $phone     = trim($_POST['phone']     ?? '');
 
-        $_SESSION['username'] = $username;
+        $stmt = $pdo->prepare("UPDATE users SET full_name=?, username=?, email=?, phone=? WHERE id=1");
+        $stmt->execute([$full_name, $username, $email, $phone]);
 
+        $_SESSION['username'] = $username;
         $user['full_name'] = $full_name;
         $user['username']  = $username;
         $user['email']     = $email;
@@ -40,16 +42,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $success_msg = 'Profile updated successfully.';
     }
 
+    // change_password
     if (isset($_POST['action']) && $_POST['action'] === 'change_password') {
+        $current = $_POST['current_password'] ?? '';
         $new_pw  = $_POST['new_password']     ?? '';
         $confirm = $_POST['confirm_password'] ?? '';
 
-        if ($new_pw !== $confirm) {
+        if (!password_verify($current, $user['password'])) {
+            $error_msg = 'Current password is incorrect.';
+        } elseif ($new_pw !== $confirm) {
             $error_msg = 'New passwords do not match.';
         } elseif (strlen($new_pw) < 6) {
             $error_msg = 'Password must be at least 6 characters.';
         } else {
+            $hashed = password_hash($new_pw, PASSWORD_BCRYPT);
+            $stmt = $pdo->prepare("UPDATE users SET password=? WHERE id=1");
+            $stmt->execute([$hashed]);
             $success_msg = 'Password updated successfully.';
+        }
+    }
+
+    if (isset($_POST['action']) && $_POST['action'] === 'upload_avatar') {
+        if (!empty($_FILES['avatar']['name'])) {
+            $ext = pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION);
+            $filename = 'avatar_' . time() . '.' . $ext;
+            $dest = __DIR__ . '/../../assets/images/avatars/' . $filename;
+            
+            if (move_uploaded_file($_FILES['avatar']['tmp_name'], $dest)) {
+                $avatar_path = $base_url . 'assets/images/avatars/' . $filename;
+                $stmt = $pdo->prepare("UPDATE users SET avatar=? WHERE id=1");
+                $stmt->execute([$avatar_path]);
+                $user['avatar'] = $avatar_path;
+                $success_msg = 'Avatar updated successfully.';
+            }
         }
     }
 }
@@ -85,18 +110,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <div class="profile-menu" id="profile-menu">
             <button class="profile-btn" id="profile-btn" aria-label="Profile">
+            <?php if (!empty($user['avatar'])): ?>
+                <img src="<?= htmlspecialchars($user['avatar']) ?>" class="profile-icon" alt="Profile" style="object-fit:cover;border-radius:50%;">
+            <?php else: ?>
                 <img src="<?= $base_url ?>assets/images/profile.png" class="profile-icon" alt="Profile">
+            <?php endif; ?>
             </button>
             <div class="profile-dropdown" id="profile-dropdown">
-                <button class="dropdown-item" id="excel-btn">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                        <line x1="8" y1="13" x2="16" y2="13"/>
-                        <line x1="8" y1="17" x2="16" y2="17"/>
-                    </svg>
-                    Excel
-                </button>
                 <a href="index.php?page=profile" class="dropdown-item">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -161,7 +181,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <circle cx="12" cy="13" r="4"/>
                     </svg>
                 </button>
-                <input type="file" id="avatar-input" accept="image/*" style="display:none;">
+                <form id="avatar-form" method="POST" enctype="multipart/form-data" style="display:none;">
+                    <input type="hidden" name="action" value="upload_avatar">
+                    <input type="file" id="avatar-input" name="avatar" accept="image/*">
+                </form>
             </div>
 
             <div class="avatar-name"><?= htmlspecialchars($user['full_name']) ?></div>

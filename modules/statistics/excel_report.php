@@ -19,36 +19,28 @@ if (!isset($_SESSION['logged_in'])) {
 require_once __DIR__ . '/../../db/connection.php';
 
 $today      = date('Y-m-d');
-$year       = (int)date('Y');
-$month      = (int)date('m');
+$year  = isset($_GET['year'])  ? (int)$_GET['year']  : (int)date('Y');
+$month = isset($_GET['month']) ? (int)$_GET['month'] : (int)date('m');
 
 // ── SHEET 1: ORDERS (today) ───────────────────────────────────────────────
 $orders_stmt = $pdo->prepare("
     SELECT
-        o.id,
-        o.beeper_number,
-        o.order_type,
-        o.payment_method,
-        o.subtotal,
-        o.discount,
-        o.total,
-        o.change_amount,
-        o.status,
-        o.created_at,
-        o.served_at,
+        o.id, o.beeper_number, o.order_type, o.payment_method,
+        o.subtotal, o.discount, o.total, o.change_amount,
+        o.status, o.created_at, o.served_at,
+        MONTH(o.created_at) AS order_month,
         GROUP_CONCAT(
             CONCAT(oi.quantity, 'x ', oi.name)
-            ORDER BY oi.id
-            SEPARATOR ', '
+            ORDER BY oi.id SEPARATOR ', '
         ) AS items_str
     FROM orders o
     LEFT JOIN order_items oi ON oi.order_id = o.id
-    WHERE DATE(o.created_at) = ?
+    WHERE YEAR(o.created_at) = ?
       AND o.status IN ('pending','served','voided')
     GROUP BY o.id
     ORDER BY o.created_at ASC
 ");
-$orders_stmt->execute([$today]);
+$orders_stmt->execute([$year]);
 $orders = $orders_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // ── SHEET 2: WEEKLY SUMMARY (current year) ────────────────────────────────
@@ -126,13 +118,19 @@ $top_stmt->execute([$year, $month]);
 $top_items = $top_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // ── OUTPUT ────────────────────────────────────────────────────────────────
+$orders_by_month = [];
+foreach ($orders as $o) {
+    $orders_by_month[(int)$o['order_month']][] = $o;
+}
+
 echo json_encode([
-    'today'      => $today,
-    'year'       => $year,
-    'month'      => $month,
-    'orders'     => $orders,
-    'weekly'     => $weekly,
-    'monthly'    => $monthly,
-    'annual'     => $annual,
-    'top_items'  => $top_items,
+    'today'          => date('Y-m-d'),
+    'year'           => $year,
+    'month'          => $month,
+    'orders'         => $orders,
+    'orders_by_month'=> $orders_by_month,
+    'weekly'         => $weekly,
+    'monthly'        => $monthly,
+    'annual'         => $annual,
+    'top_items'      => $top_items,
 ]);
