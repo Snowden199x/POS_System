@@ -21,25 +21,28 @@ try {
 
     $pdo->beginTransaction();
 
-    // Insert order
-   $stmt = $pdo->prepare("
-    INSERT INTO orders (beeper_number, order_type, payment_method, amount_paid, subtotal, discount, total, change_amount)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-");
-$stmt->execute([
-    $data['beeper_number'],
-    $data['order_type'],
-    $data['payment_method'],
-    $data['amount_paid'],
-    $data['subtotal'],
-    $data['discount'],
-    $data['total'],
-    $data['change_amount']
-]);
+    $gcashRef = trim($data['gcash_reference'] ?? '');
+
+    $stmt = $pdo->prepare("
+        INSERT INTO orders
+            (beeper_number, order_type, payment_method, amount_paid, gcash_reference,
+             subtotal, discount, total, change_amount)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+    $stmt->execute([
+        $data['beeper_number'],
+        $data['order_type'],
+        $data['payment_method'],
+        $data['amount_paid'],
+        $gcashRef,
+        $data['subtotal'],
+        $data['discount'],
+        $data['total'],
+        $data['change_amount'],
+    ]);
 
     $order_id = $pdo->lastInsertId();
 
-    // Insert order items
     $itemStmt = $pdo->prepare("
         INSERT INTO order_items (order_id, menu_item_id, name, price, quantity)
         VALUES (?, ?, ?, ?, ?)
@@ -50,7 +53,7 @@ $stmt->execute([
             $item['id'],
             $item['name'],
             $item['price'],
-            $item['qty']
+            $item['qty'],
         ]);
     }
 

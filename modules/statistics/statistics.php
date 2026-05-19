@@ -100,6 +100,10 @@ if ($sidebar_open && $selected_section) {
             o.subtotal,
             o.discount,
             o.total,
+            o.gcash_reference, 
+            o.gcash_reference_extra, 
+            o.gcash_extra_amount, 
+            o.refund_amount,
             o.status,
             GROUP_CONCAT(CONCAT(oi.quantity, 'x ', oi.name, '|', oi.price) SEPARATOR ';;') AS items_data
         FROM orders o
@@ -381,6 +385,10 @@ $bar_json     = json_encode($bar_data);
                             data-discount="<?= $discount ?>"
                             data-subtotal="<?= $subtotal ?>"
                             data-served-at="<?= htmlspecialchars($served_at, ENT_QUOTES, 'UTF-8') ?>"
+                            data-gcash-ref="<?= htmlspecialchars($o['gcash_reference'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                            data-gcash-ref-extra="<?= htmlspecialchars($o['gcash_reference_extra'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                            data-gcash-extra-amount="<?= (float)($o['gcash_extra_amount'] ?? 0) ?>"
+                            data-refund-amount="<?= (float)($o['refund_amount'] ?? 0) ?>"
                         >
                             <td><?= (int)$o['beeper_number'] ?></td>
                             <td><?= date('M j, Y g:i A', strtotime($o['created_at'])) ?></td>

@@ -10,22 +10,26 @@
     };
 
     // ── DOM refs ───────────────────────────────────────────────────────────
-    const menuGrid       = document.getElementById('menu-grid');
-    const orderList      = document.getElementById('order-items-list');
-    const orderEmpty     = document.getElementById('order-empty');
-    const subtotalEl     = document.getElementById('subtotal-value');
-    const discountValEl  = document.getElementById('discount-value');
-    const totalEl        = document.getElementById('total-value');
-    const placeOrderBtn  = document.getElementById('place-order-btn');
-    const amountInput    = document.getElementById('amount-input');
-    const amountWrap     = document.getElementById('amount-wrap');
-    const discountToggle = document.getElementById('discount-toggle');
-    const beeperInput    = document.getElementById('beeper-input');
-    const beeperWrap     = document.getElementById('beeper-wrap');
-    const beeperError    = document.getElementById('beeper-error');
-    const changeDisplay  = document.getElementById('change-display');
-    const changeAmount   = document.getElementById('change-amount');
-    const toastContainer = document.getElementById('toast-container');
+    const menuGrid        = document.getElementById('menu-grid');
+    const orderList       = document.getElementById('order-items-list');
+    const orderEmpty      = document.getElementById('order-empty');
+    const subtotalEl      = document.getElementById('subtotal-value');
+    const discountValEl   = document.getElementById('discount-value');
+    const totalEl         = document.getElementById('total-value');
+    const placeOrderBtn   = document.getElementById('place-order-btn');
+    const amountInput     = document.getElementById('amount-input');
+    const amountWrap      = document.getElementById('amount-wrap');
+    const gcashWrap       = document.getElementById('gcash-wrap');
+    const gcashRefInput   = document.getElementById('gcash-ref');
+    const gcashRefWrap    = document.getElementById('gcash-ref-wrap');
+    const gcashRefError   = document.getElementById('gcash-ref-error');
+    const discountToggle  = document.getElementById('discount-toggle');
+    const beeperInput     = document.getElementById('beeper-input');
+    const beeperWrap      = document.getElementById('beeper-wrap');
+    const beeperError     = document.getElementById('beeper-error');
+    const changeDisplay   = document.getElementById('change-display');
+    const changeAmount    = document.getElementById('change-amount');
+    const toastContainer  = document.getElementById('toast-container');
 
     // ── Profile Dropdown & Logout ──────────────────────────────────────────
     const profileBtn      = document.getElementById('profile-btn');
@@ -39,37 +43,32 @@
         });
     }
 
-    // Close dropdown when clicking outside
     document.addEventListener('click', () => {
         if (profileDropdown) profileDropdown.classList.remove('open');
     });
 
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
-            const url = logoutBtn.dataset.logoutUrl;
-            window.location.href = url;
+            window.location.href = logoutBtn.dataset.logoutUrl;
         });
     }
 
     // ── Date/Time Clock ────────────────────────────────────────────────────
     function updateClock() {
-        const now  = new Date();
-        const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const now    = new Date();
+        const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
         const months = ['January','February','March','April','May','June',
                         'July','August','September','October','November','December'];
-
         const dayName = days[now.getDay()];
         const month   = months[now.getMonth()];
         const date    = now.getDate();
         const year    = now.getFullYear();
-
-        let h = now.getHours();
-        const ampm = h >= 12 ? 'PM' : 'AM';
-        h = h % 12 || 12;
-        const m = String(now.getMinutes()).padStart(2, '0');
-
-        const dayEl  = document.getElementById('current-day');
-        const dateEl = document.getElementById('current-date');
+        let h         = now.getHours();
+        const ampm    = h >= 12 ? 'PM' : 'AM';
+        h             = h % 12 || 12;
+        const m       = String(now.getMinutes()).padStart(2, '0');
+        const dayEl   = document.getElementById('current-day');
+        const dateEl  = document.getElementById('current-date');
         if (dayEl)  dayEl.textContent  = dayName;
         if (dateEl) dateEl.textContent = `${month} ${date}, ${year} at ${h}:${m} ${ampm}`;
     }
@@ -85,7 +84,7 @@
     }
 
     function calcTotals() {
-        let subtotal = 0;
+        let subtotal      = 0;
         let totalDiscount = 0;
 
         state.order.forEach(item => {
@@ -144,15 +143,15 @@
 
     function createOrderItemEl(item) {
         const row = document.createElement('div');
-        row.className = 'order-item';
+        row.className  = 'order-item';
         row.dataset.id = item.id;
 
-        const cheapest = state.order.length > 0
+        const cheapest  = state.order.length > 0
             ? state.order.reduce((min, o) => o.price < min.price ? o : min, state.order[0])
             : null;
         const isCheapest = cheapest && item.id === cheapest.id;
-        const disc     = (state.discountEnabled && isCheapest) ? getItemDiscount(item.price) : 0;
-        const effPrice = item.price - disc;
+        const disc       = (state.discountEnabled && isCheapest) ? getItemDiscount(item.price) : 0;
+        const effPrice   = item.price - disc;
 
         row.innerHTML = `
             <div style="flex:1;min-width:0;">
@@ -196,12 +195,12 @@
     function updateTotals() {
         const { subtotal, totalDiscount, total } = calcTotals();
 
-        subtotalEl.textContent     = `Php ${subtotal.toLocaleString()}`;
-        discountValEl.textContent  = totalDiscount > 0
+        subtotalEl.textContent    = `Php ${subtotal.toLocaleString()}`;
+        discountValEl.textContent = totalDiscount > 0
             ? `−Php ${totalDiscount.toLocaleString()}`
             : 'Php 0';
-        totalEl.textContent        = `Php ${total.toFixed(2)}`;
-        placeOrderBtn.textContent  = `Place order – Php ${total.toFixed(2)}`;
+        totalEl.textContent       = `Php ${total.toFixed(2)}`;
+        placeOrderBtn.textContent = `Place order – Php ${total.toFixed(2)}`;
 
         updatePlaceOrderState();
         updateChangeDisplay();
@@ -212,21 +211,30 @@
         const { total } = calcTotals();
         const hasItems  = state.order.length > 0;
         const beeper    = beeperInput.value.trim();
-        const amount    = parseFloat(amountInput.value) || 0;
         const isCash    = state.paymentMethod === 'cash';
+        const isGcash   = state.paymentMethod === 'gcash';
 
         let canPlace = hasItems;
 
+        // Beeper required
         if (!beeper || parseInt(beeper) < 1) canPlace = false;
 
         if (isCash) {
+            // Cash: amount paid must be >= total
+            const amount = parseFloat(amountInput.value) || 0;
             if (amount <= 0 || amount < total) canPlace = false;
+        }
+
+        if (isGcash) {
+            // GCash: reference number required
+            const ref = gcashRefInput ? gcashRefInput.value.trim() : '';
+            if (!ref) canPlace = false;
         }
 
         placeOrderBtn.disabled = !canPlace;
     }
 
-    // ── Change Display ─────────────────────────────────────────────────────
+    // ── Change Display (cash only) ─────────────────────────────────────────
     function updateChangeDisplay() {
         const { total } = calcTotals();
         const amount    = parseFloat(amountInput.value) || 0;
@@ -234,20 +242,31 @@
 
         if (isCash && amount > 0 && amount >= total && total > 0) {
             const change = amount - total;
-            changeAmount.textContent = `Php ${change.toFixed(2)}`;
+            changeAmount.textContent    = `Php ${change.toFixed(2)}`;
             changeDisplay.style.display = 'flex';
         } else {
             changeDisplay.style.display = 'none';
         }
     }
 
-    // ── Show/hide amount input based on method ─────────────────────────────
-    function syncAmountVisibility() {
-        if (state.paymentMethod === 'gcash') {
-            amountWrap.style.display      = 'none';
-            changeDisplay.style.display   = 'none';
-        } else {
-            amountWrap.style.display      = '';
+    // ── Show/hide cash vs gcash inputs ─────────────────────────────────────
+    function syncPaymentInputs() {
+        const isCash  = state.paymentMethod === 'cash';
+        const isGcash = state.paymentMethod === 'gcash';
+
+        // Cash
+        amountWrap.style.display = isCash ? '' : 'none';
+        if (!isCash) {
+            changeDisplay.style.display = 'none';
+            amountInput.value = '';
+        }
+
+        // GCash
+        if (gcashWrap) gcashWrap.style.display = isGcash ? '' : 'none';
+        if (!isGcash && gcashRefInput) {
+            gcashRefInput.value = '';
+            if (gcashRefWrap)  gcashRefWrap.classList.remove('beeper-error');
+            if (gcashRefError) gcashRefError.classList.remove('visible');
         }
     }
 
@@ -272,12 +291,12 @@
             document.querySelectorAll('.payment-btn').forEach(b => b.classList.remove('payment-btn--active'));
             btn.classList.add('payment-btn--active');
             state.paymentMethod = btn.dataset.method;
-            syncAmountVisibility();
+            syncPaymentInputs();
             updateTotals();
         });
     });
 
-    // ── Beeper input: validate on input ────────────────────────────────────
+    // ── Beeper input ────────────────────────────────────────────────────────
     beeperInput.addEventListener('input', () => {
         const val = beeperInput.value.trim();
         if (!val || parseInt(val) < 1) {
@@ -290,21 +309,39 @@
         updatePlaceOrderState();
     });
 
-    // ── Amount input: live change display ──────────────────────────────────
+    // ── Cash amount input ──────────────────────────────────────────────────
     amountInput.addEventListener('input', () => {
         updateChangeDisplay();
         updatePlaceOrderState();
     });
+
+    // ── GCash reference input ──────────────────────────────────────────────
+    if (gcashRefInput) {
+        gcashRefInput.addEventListener('input', () => {
+            const val = gcashRefInput.value.trim();
+            if (!val) {
+                if (gcashRefWrap)  gcashRefWrap.classList.add('beeper-error');
+                if (gcashRefError) gcashRefError.classList.add('visible');
+            } else {
+                if (gcashRefWrap)  gcashRefWrap.classList.remove('beeper-error');
+                if (gcashRefError) gcashRefError.classList.remove('visible');
+            }
+            updatePlaceOrderState();
+        });
+    }
 
     // ── Place Order ────────────────────────────────────────────────────────
     placeOrderBtn.addEventListener('click', () => {
         if (placeOrderBtn.disabled) return;
 
         const { total, totalDiscount, subtotal } = calcTotals();
-        const beeper   = beeperInput.value.trim();
-        const amount   = parseFloat(amountInput.value) || 0;
-        const isCash   = state.paymentMethod === 'cash';
+        const beeper  = beeperInput.value.trim();
+        const isCash  = state.paymentMethod === 'cash';
+        const isGcash = state.paymentMethod === 'gcash';
+        const amount  = parseFloat(amountInput.value) || 0;
+        const gcashRef = gcashRefInput ? gcashRefInput.value.trim() : '';
 
+        // Validate beeper
         if (!beeper || parseInt(beeper) < 1) {
             beeperWrap.classList.add('beeper-error');
             beeperError.classList.add('visible');
@@ -312,24 +349,35 @@
             return;
         }
 
+        // Validate cash
         if (isCash && (amount <= 0 || amount < total)) {
             showToast('Amount paid must be equal to or greater than the total.', 'error');
             amountInput.focus();
             return;
         }
 
+        // Validate gcash ref
+        if (isGcash && !gcashRef) {
+            if (gcashRefWrap)  gcashRefWrap.classList.add('beeper-error');
+            if (gcashRefError) gcashRefError.classList.add('visible');
+            if (gcashRefInput) gcashRefInput.focus();
+            return;
+        }
+
         const change = isCash ? (amount - total) : 0;
 
         const payload = {
-            beeper_number:  parseInt(beeper),
-            order_type:     state.orderType,
-            payment_method: state.paymentMethod,
-            amount_paid:    isCash ? amount : total,
-            subtotal:       subtotal,
-            discount:       totalDiscount,
-            total:          total,
-            change_amount:  change,
-            items:          state.order.map(o => ({
+            beeper_number:    parseInt(beeper),
+            order_type:       state.orderType,
+            payment_method:   state.paymentMethod,
+            // For cash: actual amount paid. For gcash: total (exact).
+            amount_paid:      isCash ? amount : total,
+            gcash_reference:  isGcash ? gcashRef : '',
+            subtotal:         subtotal,
+            discount:         totalDiscount,
+            total:            total,
+            change_amount:    change,
+            items:            state.order.map(o => ({
                 id:    o.id,
                 name:  o.name,
                 price: o.price,
@@ -356,42 +404,41 @@
             if (data.success) {
                 showToast('Order has been placed!', 'success');
 
+                // Reset state
                 state.order           = [];
                 state.discountEnabled = false;
                 discountToggle.checked = false;
-                amountInput.value     = '';
-                beeperInput.value     = '';
+                amountInput.value      = '';
+                beeperInput.value      = '';
+                if (gcashRefInput) gcashRefInput.value = '';
                 beeperWrap.classList.remove('beeper-error');
                 beeperError.classList.remove('visible');
+                if (gcashRefWrap)  gcashRefWrap.classList.remove('beeper-error');
+                if (gcashRefError) gcashRefError.classList.remove('visible');
                 changeDisplay.style.display = 'none';
                 renderOrder();
             } else {
                 showToast('Failed to place order: ' + (data.message || 'Unknown error'), 'error');
-                placeOrderBtn.disabled    = false;
+                placeOrderBtn.disabled = false;
                 updateTotals();
             }
         })
         .catch(() => {
             showToast('Network error. Please try again.', 'error');
-            placeOrderBtn.disabled    = false;
+            placeOrderBtn.disabled = false;
             updateTotals();
         });
     });
 
     // ── Toast ──────────────────────────────────────────────────────────────
     function showToast(message, type = 'success') {
-        if (typeof window.showToast === 'function') {
-            window.showToast(message, type);
-            return;
-        }
-
-        const toast = document.createElement('div');
-        toast.className = `toast toast--${type}`;
+        const toast       = document.createElement('div');
+        toast.className   = `toast toast--${type}`;
         toast.textContent = message;
         toastContainer.appendChild(toast);
         setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateY(10px)';
+            toast.style.opacity    = '0';
+            toast.style.transform  = 'translateY(10px)';
             toast.style.transition = 'opacity 0.3s, transform 0.3s';
             setTimeout(() => toast.remove(), 300);
         }, 3500);
@@ -404,7 +451,7 @@
     }
 
     // ── Init ───────────────────────────────────────────────────────────────
-    syncAmountVisibility();
+    syncPaymentInputs();
     renderOrder();
 
 })();

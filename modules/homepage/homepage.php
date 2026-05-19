@@ -1,11 +1,10 @@
 <?php
-// Guard: must be accessed through index.php
 if (!isset($_SESSION["logged_in"])) {
     header("Location: ../../index.php");
     exit();
 }
 
-$base_url = '/Github/POS_System/';
+$base_url     = '/Github/POS_System/';
 $current_page = isset($_GET['page']) ? $_GET['page'] : 'home';
 
 require_once __DIR__ . '/../../db/connection.php';
@@ -21,12 +20,21 @@ $menu_items = [
     ['id' => 4, 'name' => 'Tori Floss Maki',      'price' => 149, 'category' => 'sushi', 'image' => 'assets/images/torifloss.png'],
     ['id' => 5, 'name' => 'Ebi Tempura Roll',     'price' => 149, 'category' => 'sushi', 'image' => 'assets/images/ebitemp.png'],
     ['id' => 6, 'name' => 'Mango Craze',          'price' => 139, 'category' => 'sushi', 'image' => 'assets/images/mangocraze.png'],
-    ['id' => 7, 'name' => 'Garden Maki',          'price' => 169, 'category' => 'sushi', 'image' => 'assets/images/gardenmaki.png'],
-    ['id' => 8, 'name' => 'Red Hot Chili Roll',   'price' => 179, 'category' => 'sushi', 'image' => 'assets/images/redhotchili.png'],
+    ['id' => 7, 'name' => 'Garden Maki',          'price' => 179, 'category' => 'sushi', 'image' => 'assets/images/gardenmaki.png'],
+    ['id' => 8, 'name' => 'Red Hot Chili Roll',   'price' => 189, 'category' => 'sushi', 'image' => 'assets/images/redhotchili.png'],
 ];
 
-// Discount map: price => fixed discount (floor of 20%)
-$discount_map = [229=>45, 169=>33, 159=>31, 149=>29, 139=>27];
+// ── Discount map: discounted price after 20% PWD ──────────────────────────
+// Original → Discounted (floor of 80%)
+$discount_map = [
+    229 => 45,  // 229 - 45 = 184
+    169 => 33,  // 169 - 33 = 136
+    159 => 31,  // 159 - 31 = 128
+    149 => 29,  // 149 - 29 = 120
+    139 => 27,  // 139 - 27 = 112
+    179 => 36,  // 179 - 36 = 143
+    189 => 38,  // 189 - 38 = 151
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -36,30 +44,25 @@ $discount_map = [229=>45, 169=>33, 159=>31, 149=>29, 139=>27];
     <title>Twist &amp; Roll POS</title>
     <link rel="stylesheet" href="<?= $base_url ?>assets/index.css">
     <link rel="stylesheet" href="<?= $base_url ?>modules/homepage/homepage.css">
-    <!-- Pass discount map to JS -->
     <script>
         const DISCOUNT_MAP = <?= json_encode($discount_map) ?>;
         const MENU_ITEMS   = <?= json_encode(array_column($menu_items, null, 'id')) ?>;
     </script>
 </head>
-<body
+<body>
 
-
-
-<!-- TOAST CONTAINER -->
 <div class="toast-container" id="toast-container"></div>
 
-<!-- TOP NAVBAR -->
 <header class="navbar">
-    <img src="<?= $base_url ?>assets/images/logo.png" alt="Twist &amp; Roll" class="navbar__logo-img">
-
+    <a href="index.php?page=home" class="navbar__logo-link">
+        <img src="<?= $base_url ?>assets/images/logo.png" alt="Twist &amp; Roll" class="navbar__logo-img">
+    </a>
     <nav class="navbar__nav">
         <a href="index.php?page=home"       class="nav-link <?= $current_page === 'home'       ? 'nav-link--active' : '' ?>">Home</a>
         <a href="index.php?page=orders"     class="nav-link <?= $current_page === 'orders'     ? 'nav-link--active' : '' ?>">Orders</a>
         <a href="index.php?page=served"     class="nav-link <?= $current_page === 'served'     ? 'nav-link--active' : '' ?>">Served</a>
         <a href="index.php?page=statistics" class="nav-link <?= $current_page === 'statistics' ? 'nav-link--active' : '' ?>">Statistics</a>
     </nav>
-
     <div class="navbar__right">
         <div class="navbar__datetime">
             <div class="navbar__day"  id="current-day"></div>
@@ -67,24 +70,19 @@ $discount_map = [229=>45, 169=>33, 159=>31, 149=>29, 139=>27];
         </div>
         <div class="profile-menu" id="profile-menu">
             <button class="profile-btn" id="profile-btn" aria-label="Profile">
-            <?php if (!empty($nav_user['avatar'])): ?>
-                <img src="<?= htmlspecialchars($nav_user['avatar']) ?>" class="profile-icon" alt="Profile" style="object-fit:cover;border-radius:50%;">
-            <?php else: ?>
-                <img src="<?= $base_url ?>assets/images/profile.png" class="profile-icon" alt="Profile">
-            <?php endif; ?>
+                <?php if (!empty($nav_user['avatar'])): ?>
+                    <img src="<?= htmlspecialchars($nav_user['avatar']) ?>" class="profile-icon" alt="Profile" style="object-fit:cover;border-radius:50%;">
+                <?php else: ?>
+                    <img src="<?= $base_url ?>assets/images/profile.png" class="profile-icon" alt="Profile">
+                <?php endif; ?>
             </button>
             <div class="profile-dropdown" id="profile-dropdown">
-
-                <!-- Profile -->
                 <a href="index.php?page=profile" class="dropdown-item">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="7" r="4"/>
-                        <path d="M5.5 21a6.5 6.5 0 0 1 13 0"/>
+                        <circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/>
                     </svg>
                     Profile
                 </a>
-
-                <!-- Logout -->
                 <button class="logout-btn" id="logout-btn" data-logout-url="index.php?logout=1">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -93,19 +91,16 @@ $discount_map = [229=>45, 169=>33, 159=>31, 149=>29, 139=>27];
                     </svg>
                     Logout
                 </button>
-
             </div>
         </div>
     </div>
 </header>
 
-<!-- MAIN CONTENT -->
 <main class="pos-layout">
 
-    <!-- LEFT PANEL: MENU -->
+    <!-- LEFT: MENU -->
     <section class="menu-panel">
         <h2 class="menu-panel__title">Menu</h2>
-
         <div class="menu-grid" id="menu-grid">
             <?php foreach ($menu_items as $item): ?>
             <div class="menu-card"
@@ -135,23 +130,20 @@ $discount_map = [229=>45, 169=>33, 159=>31, 149=>29, 139=>27];
         </div>
     </section>
 
-    <!-- RIGHT PANEL: ORDER -->
+    <!-- RIGHT: ORDER PANEL -->
     <aside class="order-panel">
 
-        <!-- Dine In / Take Out -->
         <div class="order-panel__type">
             <button class="type-btn type-btn--active" data-type="dine-in">Dine in</button>
             <button class="type-btn" data-type="take-out">Take out</button>
         </div>
 
-        <!-- Beeper -->
         <div class="order-panel__beeper" id="beeper-wrap">
             <label class="beeper-label" for="beeper-input">Beeper #</label>
             <input type="number" class="beeper-input" id="beeper-input" min="1" placeholder="Enter number">
         </div>
         <p class="beeper-error-msg" id="beeper-error">Beeper number is required.</p>
 
-        <!-- Order Items -->
         <div class="order-items-section">
             <p class="order-items-label">ORDER ITEMS</p>
             <div class="order-items-list" id="order-items-list">
@@ -166,7 +158,6 @@ $discount_map = [229=>45, 169=>33, 159=>31, 149=>29, 139=>27];
             </div>
         </div>
 
-        <!-- Payment Summary -->
         <div class="payment-summary">
             <p class="payment-summary__title">PAYMENT SUMMARY</p>
             <div class="payment-summary__row">
@@ -188,24 +179,32 @@ $discount_map = [229=>45, 169=>33, 159=>31, 149=>29, 139=>27];
             </div>
         </div>
 
-        <!-- Payment Method -->
         <div class="payment-methods">
             <button class="payment-btn payment-btn--active" data-method="cash">Cash</button>
             <button class="payment-btn" data-method="gcash">Gcash</button>
         </div>
 
-        <!-- Amount Paid -->
+        <!-- Cash: Amount Paid -->
         <div class="amount-input-wrap" id="amount-wrap">
             <input type="number" class="amount-input" id="amount-input" placeholder="Php 0.00" step="1" min="0">
         </div>
 
-        <!-- Change display -->
+        <!-- GCash: Reference Number -->
+        <div id="gcash-wrap" style="display:none;">
+            <div class="order-panel__beeper" id="gcash-ref-wrap">
+                <label class="beeper-label" for="gcash-ref" style="white-space:nowrap;">Ref #</label>
+                <input type="text" class="beeper-input" id="gcash-ref"
+                       placeholder="GCash reference number" maxlength="50">
+            </div>
+            <p class="beeper-error-msg" id="gcash-ref-error">GCash reference number is required.</p>
+        </div>
+
+        <!-- Change (cash only) -->
         <div class="change-display" id="change-display" style="display:none;">
             <span class="change-display__label">Change</span>
             <span class="change-display__amount" id="change-amount">Php 0.00</span>
         </div>
 
-        <!-- Place Order -->
         <button class="place-order-btn" id="place-order-btn" disabled>
             Place order – Php 0.00
         </button>
