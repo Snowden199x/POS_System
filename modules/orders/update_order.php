@@ -19,37 +19,50 @@ if (!$data || empty($data['order_id'])) {
 try {
     $pdo->beginTransaction();
 
-    // Update the order header
+    $orig_stmt = $pdo->prepare("SELECT total, payment_method FROM orders WHERE id = ?");
+    $orig_stmt->execute([$data['order_id']]);
+    $original       = $orig_stmt->fetch();
+    $original_total = (float)$original['total'];
+    $new_total      = (float)$data['total'];
+    $diff           = $new_total - $original_total;
+
+    $gcash_extra_ref    = $data['gcash_ref']      ?? null;   // extra ref for added items
+    $gcash_extra_amount = $data['gcash_extra_amount'] ?? 0;  // amount of extra gcash payment
+    $refund_amount      = $data['refund_amount']   ?? 0;     // refund if cheaper
+
     $stmt = $pdo->prepare("
         UPDATE orders
         SET
-            beeper_number  = ?,
-            order_type     = ?,
-            payment_method = ?,
-            amount_paid    = ?,
-            subtotal       = ?,
-            discount       = ?,
-            total          = ?
+            beeper_number         = ?,
+            order_type            = ?,
+            payment_method        = ?,
+            amount_paid           = ?,
+            subtotal              = ?,
+            discount              = ?,
+            total                 = ?,
+            gcash_reference_extra = COALESCE(NULLIF(?, ''), gcash_reference_extra),
+            gcash_extra_amount    = ?,
+            refund_amount         = ?
         WHERE id = ?
     ");
     $stmt->execute([
         $data['beeper_number'],
         $data['order_type'],
         $data['payment_method'],
-        $data['amount_paid']  ?? $data['total'],
-        $data['subtotal']     ?? $data['total'],
-        $data['discount']     ?? 0,
+        $data['amount_paid'] ?? $data['total'],
+        $data['subtotal']    ?? $data['total'],
+        $data['discount']    ?? 0,
         $data['total'],
+        $gcash_extra_ref,
+        $gcash_extra_amount,
+        $refund_amount,
         $data['order_id'],
     ]);
 
-    // Replace order items if provided
     if (!empty($data['items'])) {
-        // Delete old items
         $del = $pdo->prepare("DELETE FROM order_items WHERE order_id = ?");
         $del->execute([$data['order_id']]);
 
-        // Insert new items
         $ins = $pdo->prepare("
             INSERT INTO order_items (order_id, menu_item_id, name, price, quantity)
             VALUES (?, ?, ?, ?, ?)
@@ -66,7 +79,11 @@ try {
     }
 
     $pdo->commit();
-    echo json_encode(['success' => true]);
+    echo json_encode([
+        'success'       => true,
+        'diff'          => $diff,
+        'refund_amount' => $refund_amount,
+    ]);
 
 } catch (Exception $e) {
     $pdo->rollBack();
