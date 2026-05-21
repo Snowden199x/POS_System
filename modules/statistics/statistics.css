@@ -918,3 +918,31 @@
   .dash-action-btn { padding: 8px 12px; font-size: 12px; }
   .excel-option-grid { grid-template-columns: 1fr; }
 }
+
+.section-stat__icon img {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+}
+
+.sidebar-icon,
+.date-icon,
+.crumb-icon{
+    width:18px;
+    height:16px;
+    object-fit:contain;
+    vertical-align:middle;
+}
+
+.sidebar-icon{
+    margin-right:8px;
+}
+
+.date-icon{
+    margin-right:6px;
+    margin-left:4px;
+}
+
+.crumb-icon{
+    margin-right:6px;
+}
