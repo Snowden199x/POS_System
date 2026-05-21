@@ -219,15 +219,15 @@ $bar_json     = json_encode($bar_data);
                          style="display:<?= ($num==$selected_month&&$sidebar_open)?'block':'none' ?>">
                         <a href="?page=statistics&sidebar=1&year=<?= $selected_year ?>&month=<?= $num ?>&section=orders"
                            class="tree-item <?= ($selected_section==='orders'&&$num==$selected_month)?'tree-item--active':'' ?>">
-                            <span>📋</span> Orders <span class="tree-count"><?= $annual_by_month[$num]['orders']??0 ?></span>
+                            <img src="<?= $base_url ?>assets/images/orders1_icon.png" class="sidebar-icon"> Orders <span class="tree-count"><?= $annual_by_month[$num]['orders']??0 ?></span>
                         </a>
                         <a href="?page=statistics&sidebar=1&year=<?= $selected_year ?>&month=<?= $num ?>&section=served"
                            class="tree-item <?= ($selected_section==='served'&&$num==$selected_month)?'tree-item--active':'' ?>">
-                            <span>✅</span> Served <span class="tree-count"><?= $annual_by_month[$num]['served']??0 ?></span>
+                            <img src="<?= $base_url ?>assets/images/served_icon.png" class="sidebar-icon"> Served <span class="tree-count"><?= $annual_by_month[$num]['served']??0 ?></span>
                         </a>
                         <a href="?page=statistics&sidebar=1&year=<?= $selected_year ?>&month=<?= $num ?>&section=voids"
                            class="tree-item <?= ($selected_section==='voids'&&$num==$selected_month)?'tree-item--active':'' ?>">
-                            <span>❌</span> Voids <span class="tree-count"><?= $voids_by_month[$num]??0 ?></span>
+                            <img src="<?= $base_url ?>assets/images/voids_icon.png" class="sidebar-icon"> Voids <span class="tree-count"><?= $voids_by_month[$num]??0 ?></span>
                         </a>
                     </div>
                 </div>
@@ -257,20 +257,25 @@ $bar_json     = json_encode($bar_data);
             <div class="section-view__top">
                 <h2 class="section-view__title"><?= ucfirst($selected_section) ?></h2>
                 <div class="section-view__date">
-                    📅 <?= $months_list[$selected_month] ?> 1 – <?= date('t',mktime(0,0,0,$selected_month,1,$selected_year)) ?>, <?= $selected_year ?>
-                </div>
+    <img src="<?= $base_url ?>assets/images/calendar_icon.png" class="date-icon">
+    <?= $months_list[$selected_month] ?> 1 – <?= date('t',mktime(0,0,0,$selected_month,1,$selected_year)) ?>, <?= $selected_year ?>
+</div>
             </div>
 
             <div class="section-stats">
                 <div class="section-stat">
-                    <div class="section-stat__icon section-stat__icon--purple">📋</div>
+    <div class="section-stat__icon section-stat__icon--purple">
+        <img src="<?= $base_url ?>assets/images/totalorder_icon.png" alt="">
+    </div>
                     <div>
                         <div class="section-stat__label">Total <?= ucfirst($selected_section) ?></div>
                         <div class="section-stat__val"><?= $section_stats['total']??0 ?></div>
                     </div>
                 </div>
                 <div class="section-stat">
-                    <div class="section-stat__icon section-stat__icon--gold">📈</div>
+                    <div class="section-stat__icon section-stat__icon--gold">
+    <img src="<?= $base_url ?>assets/images/highest_icon.png" alt="">
+</div>
                     <div>
                         <div class="section-stat__label">Highest Order</div>
                         <div class="section-stat__val"><?= $section_stats['highest']?'₱'.number_format($section_stats['highest'],0):0 ?></div>
@@ -278,7 +283,9 @@ $bar_json     = json_encode($bar_data);
                     </div>
                 </div>
                 <div class="section-stat">
-                    <div class="section-stat__icon section-stat__icon--red">📉</div>
+                    <div class="section-stat__icon section-stat__icon--red">
+    <img src="<?= $base_url ?>assets/images/lowest_icon.png" alt="">
+</div>
                     <div>
                         <div class="section-stat__label">Lowest Order</div>
                         <div class="section-stat__val"><?= $section_stats['lowest']?'₱'.number_format($section_stats['lowest'],0):0 ?></div>
@@ -286,7 +293,9 @@ $bar_json     = json_encode($bar_data);
                     </div>
                 </div>
                 <div class="section-stat">
-                    <div class="section-stat__icon section-stat__icon--green">💰</div>
+                    <div class="section-stat__icon section-stat__icon--green">
+    <img src="<?= $base_url ?>assets/images/totalsales_icon.png" alt="">
+</div>
                     <div>
                         <div class="section-stat__label">Total Sales</div>
                         <div class="section-stat__val">₱<?= number_format($section_stats['sum']??0,0) ?></div>
