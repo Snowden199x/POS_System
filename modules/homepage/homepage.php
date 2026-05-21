@@ -20,20 +20,20 @@ $menu_items = [
     ['id' => 4, 'name' => 'Tori Floss Maki',      'price' => 149, 'category' => 'sushi', 'image' => 'assets/images/torifloss.png'],
     ['id' => 5, 'name' => 'Ebi Tempura Roll',     'price' => 149, 'category' => 'sushi', 'image' => 'assets/images/ebitemp.png'],
     ['id' => 6, 'name' => 'Mango Craze',          'price' => 139, 'category' => 'sushi', 'image' => 'assets/images/mangocraze.png'],
+    ['id' => 9, 'name' => 'California Maki',      'price' => 139, 'category' => 'sushi', 'image' => 'assets/images/calimaki.png'],
     ['id' => 7, 'name' => 'Garden Maki',          'price' => 179, 'category' => 'sushi', 'image' => 'assets/images/gardenmaki.png'],
     ['id' => 8, 'name' => 'Red Hot Chili Roll',   'price' => 189, 'category' => 'sushi', 'image' => 'assets/images/redhotchili.png'],
 ];
 
-// ── Discount map: discounted price after 20% PWD ──────────────────────────
-// Original → Discounted (floor of 80%)
+// Discount = floor(price × 20%)
 $discount_map = [
-    229 => 45,  // 229 - 45 = 184
-    169 => 33,  // 169 - 33 = 136
-    159 => 31,  // 159 - 31 = 128
-    149 => 29,  // 149 - 29 = 120
-    139 => 27,  // 139 - 27 = 112
-    179 => 36,  // 179 - 36 = 143
-    189 => 38,  // 189 - 38 = 151
+    229 => 45,
+    169 => 33,
+    159 => 31,
+    149 => 29,
+    139 => 27,
+    179 => 36,
+    189 => 38,
 ];
 ?>
 <!DOCTYPE html>
@@ -58,10 +58,10 @@ $discount_map = [
         <img src="<?= $base_url ?>assets/images/logo.png" alt="Twist &amp; Roll" class="navbar__logo-img">
     </a>
     <nav class="navbar__nav">
-        <a href="index.php?page=home"       class="nav-link <?= $current_page === 'home'       ? 'nav-link--active' : '' ?>">Home</a>
-        <a href="index.php?page=orders"     class="nav-link <?= $current_page === 'orders'     ? 'nav-link--active' : '' ?>">Orders</a>
-        <a href="index.php?page=served"     class="nav-link <?= $current_page === 'served'     ? 'nav-link--active' : '' ?>">Served</a>
-        <a href="index.php?page=statistics" class="nav-link <?= $current_page === 'statistics' ? 'nav-link--active' : '' ?>">Statistics</a>
+        <a href="index.php?page=home"       class="nav-link <?= $current_page==='home'       ?'nav-link--active':'' ?>">Home</a>
+        <a href="index.php?page=orders"     class="nav-link <?= $current_page==='orders'     ?'nav-link--active':'' ?>">Orders</a>
+        <a href="index.php?page=served"     class="nav-link <?= $current_page==='served'     ?'nav-link--active':'' ?>">Served</a>
+        <a href="index.php?page=statistics" class="nav-link <?= $current_page==='statistics' ?'nav-link--active':'' ?>">Statistics</a>
     </nav>
     <div class="navbar__right">
         <div class="navbar__datetime">
@@ -98,7 +98,6 @@ $discount_map = [
 
 <main class="pos-layout">
 
-    <!-- LEFT: MENU -->
     <section class="menu-panel">
         <h2 class="menu-panel__title">Menu</h2>
         <div class="menu-grid" id="menu-grid">
@@ -130,7 +129,6 @@ $discount_map = [
         </div>
     </section>
 
-    <!-- RIGHT: ORDER PANEL -->
     <aside class="order-panel">
 
         <div class="order-panel__type">
@@ -184,22 +182,18 @@ $discount_map = [
             <button class="payment-btn" data-method="gcash">Gcash</button>
         </div>
 
-        <!-- Cash: Amount Paid -->
         <div class="amount-input-wrap" id="amount-wrap">
             <input type="number" class="amount-input" id="amount-input" placeholder="Php 0.00" step="1" min="0">
         </div>
 
-        <!-- GCash: Reference Number -->
         <div id="gcash-wrap" style="display:none;">
             <div class="order-panel__beeper" id="gcash-ref-wrap">
                 <label class="beeper-label" for="gcash-ref" style="white-space:nowrap;">Ref #</label>
-                <input type="text" class="beeper-input" id="gcash-ref"
-                       placeholder="GCash reference number" maxlength="50">
+                <input type="text" class="beeper-input" id="gcash-ref" placeholder="GCash reference number" maxlength="50">
             </div>
             <p class="beeper-error-msg" id="gcash-ref-error">GCash reference number is required.</p>
         </div>
 
-        <!-- Change (cash only) -->
         <div class="change-display" id="change-display" style="display:none;">
             <span class="change-display__label">Change</span>
             <span class="change-display__amount" id="change-amount">Php 0.00</span>

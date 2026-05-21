@@ -3,50 +3,26 @@
 
   // ── CLOCK ──────────────────────────────────────────────────────────────
   function updateClock() {
-    const now = new Date();
-    const days = [
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-    ];
-    const months = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
-    let h = now.getHours();
-    const ampm = h >= 12 ? "PM" : "AM";
-    h = h % 12 || 12;
-    const m = String(now.getMinutes()).padStart(2, "0");
-
-    const dayEl = document.getElementById("current-day");
+    const now    = new Date();
+    const days   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    let h        = now.getHours();
+    const ampm   = h >= 12 ? "PM" : "AM";
+    h            = h % 12 || 12;
+    const m      = String(now.getMinutes()).padStart(2, "0");
+    const dayEl  = document.getElementById("current-day");
     const dateEl = document.getElementById("current-date");
-    if (dayEl) dayEl.textContent = days[now.getDay()];
-    if (dateEl)
-      dateEl.textContent = `${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()} at ${h}:${m} ${ampm}`;
+    if (dayEl)  dayEl.textContent  = days[now.getDay()];
+    if (dateEl) dateEl.textContent = `${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()} at ${h}:${m} ${ampm}`;
   }
-
   updateClock();
   setInterval(updateClock, 1000);
 
   // ── PROFILE DROPDOWN ───────────────────────────────────────────────────
-  const profileBtn = document.getElementById("profile-btn");
-  const dropdown = document.getElementById("profile-dropdown");
-  const logoutBtn = document.getElementById("logout-btn");
-  const excelBtn = document.getElementById("excel-btn");
+  const profileBtn  = document.getElementById("profile-btn");
+  const dropdown    = document.getElementById("profile-dropdown");
+  const logoutBtn   = document.getElementById("logout-btn");
+  const dangerLogout= document.getElementById("danger-logout-btn");
 
   if (profileBtn && dropdown) {
     profileBtn.addEventListener("click", (e) => {
@@ -55,52 +31,33 @@
     });
     document.addEventListener("click", () => dropdown.classList.remove("open"));
   }
-
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      window.location.href = logoutBtn.dataset.logoutUrl;
-    });
-  }
-
-  if (excelBtn) {
-    excelBtn.addEventListener("click", () =>
-      alert("Excel export coming soon!"),
-    );
-  }
-
-  // ── DANGER ZONE LOGOUT ─────────────────────────────────────────────────
-  const dangerLogout = document.getElementById("danger-logout-btn");
-  if (dangerLogout) {
-    dangerLogout.addEventListener("click", () => {
-      window.location.href = dangerLogout.dataset.logoutUrl;
-    });
-  }
+  if (logoutBtn)    logoutBtn.addEventListener("click",    () => { window.location.href = logoutBtn.dataset.logoutUrl; });
+  if (dangerLogout) dangerLogout.addEventListener("click", () => { window.location.href = dangerLogout.dataset.logoutUrl; });
 
   // ── EDIT PROFILE TOGGLE ────────────────────────────────────────────────
-  const accountView = document.getElementById("account-view");
-  const accountEdit = document.getElementById("account-edit");
-  const openEditBtn = document.getElementById("open-edit-btn");
+  const accountView   = document.getElementById("account-view");
+  const accountEdit   = document.getElementById("account-edit");
+  const openEditBtn   = document.getElementById("open-edit-btn");
   const inlineEditBtn = document.getElementById("inline-edit-btn");
   const cancelEditBtn = document.getElementById("cancel-edit-btn");
 
   function showEditMode() {
-    if (accountView) accountView.style.display = "none";
-    if (accountEdit) accountEdit.style.display = "block";
-    if (inlineEditBtn) inlineEditBtn.style.display = "none";
+    if (accountView)   accountView.style.display   = "none";
+    if (accountEdit)   accountEdit.style.display   = "block";
+    if (inlineEditBtn) inlineEditBtn.style.display  = "none";
   }
-
   function showViewMode() {
-    if (accountView) accountView.style.display = "block";
-    if (accountEdit) accountEdit.style.display = "none";
-    if (inlineEditBtn) inlineEditBtn.style.display = "flex";
+    if (accountView)   accountView.style.display   = "block";
+    if (accountEdit)   accountEdit.style.display   = "none";
+    if (inlineEditBtn) inlineEditBtn.style.display  = "flex";
   }
 
-  if (openEditBtn) openEditBtn.addEventListener("click", showEditMode);
+  if (openEditBtn)   openEditBtn.addEventListener("click",   showEditMode);
   if (inlineEditBtn) inlineEditBtn.addEventListener("click", showEditMode);
   if (cancelEditBtn) cancelEditBtn.addEventListener("click", showViewMode);
 
   // ── CHANGE PASSWORD — scroll to security card ──────────────────────────
-  const openPwBtn = document.getElementById("open-pw-btn");
+  const openPwBtn    = document.getElementById("open-pw-btn");
   const securityCard = document.getElementById("security-card");
 
   if (openPwBtn && securityCard) {
@@ -131,9 +88,110 @@
     });
   });
 
-  // ── AVATAR PREVIEW ─────────────────────────────────────────────────────
-  const camBtn = document.getElementById("avatar-cam-btn");
-  const avatarInput = document.getElementById("avatar-input");
+  // ── LIVE PASSWORD REQUIREMENTS ─────────────────────────────────────────
+  const pwNewInput  = document.getElementById("pw-new");
+  const pwConfirm   = document.getElementById("pw-confirm");
+  const pwReqs      = document.getElementById("pw-requirements");
+  const pwMatch     = document.getElementById("pw-match");
+  const pwSubmitBtn = document.getElementById("pw-submit-btn");
+
+  const rules = [
+    { id: "req-length",  test: (v) => v.length >= 8,            label: "At least 8 characters" },
+    { id: "req-upper",   test: (v) => /[A-Z]/.test(v),          label: "At least 1 uppercase letter (A–Z)" },
+    { id: "req-number",  test: (v) => /[0-9]/.test(v),          label: "At least 1 number (0–9)" },
+    { id: "req-special", test: (v) => /[\W_]/.test(v),          label: "At least 1 special character (!@#$...)" },
+  ];
+
+  function checkRequirements() {
+    const val         = pwNewInput ? pwNewInput.value : "";
+    const hasValue    = val.length > 0;
+    let   allPassed   = true;
+
+    // Show/hide the requirements box only when user has typed something
+    if (pwReqs) pwReqs.style.display = hasValue ? "block" : "none";
+
+    rules.forEach((rule) => {
+      const el   = document.getElementById(rule.id);
+      if (!el) return;
+      const pass = rule.test(val);
+      if (!pass) allPassed = false;
+
+      const icon = el.querySelector(".pw-req__icon");
+      if (pass) {
+        el.classList.add("pw-req--pass");
+        el.classList.remove("pw-req--fail");
+        if (icon) icon.textContent = "✓";
+      } else {
+        el.classList.add("pw-req--fail");
+        el.classList.remove("pw-req--pass");
+        if (icon) icon.textContent = "✗";
+      }
+    });
+
+    checkMatch();
+    updateSubmitBtn(allPassed);
+  }
+
+  function checkMatch() {
+    if (!pwConfirm || !pwNewInput || !pwMatch) return;
+    const newVal     = pwNewInput.value;
+    const confirmVal = pwConfirm.value;
+
+    if (!confirmVal) {
+      pwMatch.style.display = "none";
+      return;
+    }
+
+    pwMatch.style.display = "flex";
+
+    if (newVal === confirmVal) {
+      pwMatch.className  = "pw-match pw-match--ok";
+      pwMatch.innerHTML  = `<span class="pw-req__icon">✓</span> Passwords match`;
+    } else {
+      pwMatch.className  = "pw-match pw-match--err";
+      pwMatch.innerHTML  = `<span class="pw-req__icon">✗</span> Passwords do not match`;
+    }
+  }
+
+  function updateSubmitBtn(allRulesPassed) {
+    if (!pwSubmitBtn) return;
+    const confirmVal   = pwConfirm ? pwConfirm.value : "";
+    const newVal       = pwNewInput ? pwNewInput.value : "";
+    const matchesOk    = newVal === confirmVal && confirmVal.length > 0;
+    const canSubmit    = allRulesPassed && matchesOk;
+
+    pwSubmitBtn.disabled = !canSubmit;
+    pwSubmitBtn.style.opacity = canSubmit ? "1" : "0.5";
+    pwSubmitBtn.style.cursor  = canSubmit ? "pointer" : "not-allowed";
+  }
+
+  if (pwNewInput) {
+    // Hide requirements on load
+    if (pwReqs) pwReqs.style.display = "none";
+    if (pwMatch) pwMatch.style.display = "none";
+
+    pwNewInput.addEventListener("input", checkRequirements);
+  }
+  if (pwConfirm) {
+    pwConfirm.addEventListener("input", () => {
+      checkMatch();
+      // re-evaluate submit state
+      const val       = pwNewInput ? pwNewInput.value : "";
+      const allPassed = rules.every((r) => r.test(val));
+      updateSubmitBtn(allPassed);
+    });
+  }
+
+  // Disable submit on page load until requirements met
+  if (pwSubmitBtn) {
+    pwSubmitBtn.disabled = true;
+    pwSubmitBtn.style.opacity = "0.5";
+    pwSubmitBtn.style.cursor  = "not-allowed";
+  }
+
+  // ── AVATAR PREVIEW & UPLOAD ────────────────────────────────────────────
+  const camBtn     = document.getElementById("avatar-cam-btn");
+  const avatarInput= document.getElementById("avatar-input");
   const avatarWrap = document.querySelector(".avatar-wrap");
 
   if (camBtn && avatarInput) {
@@ -143,7 +201,7 @@
       const file = e.target.files[0];
       if (!file) return;
 
-      // Preview
+      // Preview immediately
       const reader = new FileReader();
       reader.onload = (ev) => {
         let img = avatarWrap.querySelector(".avatar-img");
@@ -159,9 +217,10 @@
       };
       reader.readAsDataURL(file);
 
-      // Auto-submit
+      // Auto-submit the avatar form
       const avatarForm = document.getElementById("avatar-form");
       if (avatarForm) avatarForm.submit();
     });
   }
+
 })();

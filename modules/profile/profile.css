@@ -3,8 +3,6 @@
    ============================================= */
 
 /* ── SCROLL FIX ───────────────────────────── */
-/* The navbar is position:fixed so the body
-   needs padding-top and must be scrollable   */
 body {
     overflow-y: auto !important;
     height: auto !important;
@@ -36,13 +34,8 @@ body {
     transition: color 0.15s;
 }
 .profile-breadcrumb__link:hover { color: var(--green-100); }
-
-.profile-breadcrumb__sep { color: var(--text-light); }
-
-.profile-breadcrumb__current {
-    color: var(--green-100);
-    font-weight: 600;
-}
+.profile-breadcrumb__sep        { color: var(--text-light); }
+.profile-breadcrumb__current    { color: var(--green-100); font-weight: 600; }
 
 /* ── PAGE TITLE ───────────────────────────── */
 .profile-page__title {
@@ -97,7 +90,7 @@ body {
     margin-bottom: 18px;
 }
 
-.profile-card:last-child { margin-bottom: 0; }
+.profile-card:last-child  { margin-bottom: 0; }
 
 .profile-card--avatar {
     text-align: center;
@@ -204,7 +197,6 @@ body {
     margin-bottom: 10px;
     transition: background 0.15s;
 }
-
 .profile-btn-primary:hover { background: #a87e0e; }
 
 .profile-btn-secondary {
@@ -224,10 +216,9 @@ body {
     cursor: pointer;
     transition: background 0.15s;
 }
-
 .profile-btn-secondary:hover { background: rgba(216,195,111,0.12); }
 
-/* ── EDIT BUTTON (top right of card) ─────── */
+/* ── EDIT BUTTON (card header) ────────────── */
 .profile-edit-btn {
     display: flex;
     align-items: center;
@@ -243,7 +234,6 @@ body {
     cursor: pointer;
     transition: background 0.15s;
 }
-
 .profile-edit-btn:hover { background: rgba(216,195,111,0.15); }
 
 /* ── PROFILE FIELDS GRID ──────────────────── */
@@ -311,7 +301,7 @@ body {
     border-radius: 999px;
 }
 
-.profile-status--active  { background: #e8f4ec; color: #1c6b38; }
+.profile-status--active   { background: #e8f4ec; color: #1c6b38; }
 .profile-status--inactive { background: #fdecea; color: #c0392b; }
 
 /* ── FORM ACTIONS ─────────────────────────── */
@@ -343,10 +333,13 @@ body {
     font-size: 13.5px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: background 0.15s, opacity 0.15s;
 }
-
-.profile-btn-gold:hover { background: #a87e0e; }
+.profile-btn-gold:hover:not(:disabled) { background: #a87e0e; }
+.profile-btn-gold:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 
 /* ── PASSWORD FIELD WRAP ──────────────────── */
 .profile-pw-wrap {
@@ -369,8 +362,65 @@ body {
     padding: 0;
     transition: color 0.15s;
 }
-
 .pw-toggle:hover { color: var(--green-100); }
+
+/* ═══════════════════════════════════════════
+   PASSWORD REQUIREMENTS CHECKLIST
+   ═══════════════════════════════════════════ */
+
+/* Wrapper that spans all 3 columns */
+.pw-requirements-wrap {
+    grid-column: 1 / -1;   /* full width under the 3 inputs */
+    margin-top: 2px;
+}
+
+.pw-requirements {
+    display: none;          /* toggled by JS */
+    background: #FFFDF0;
+    border: 1px solid rgba(216, 195, 111, 0.30);
+    border-radius: 8px;
+    padding: 8px 12px;
+    flex-direction: row;    /* horizontal row of requirements */
+    flex-wrap: wrap;
+    gap: 4px 18px;
+}
+
+.pw-req {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #c0392b;
+    transition: color 0.18s;
+    white-space: nowrap;
+}
+
+.pw-req__icon {
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.pw-req.pw-req--pass { color: #1c6b38; }
+.pw-req.pw-req--fail { color: #c0392b; }
+
+/* ── PASSWORD MATCH INDICATOR ─────────────── */
+.pw-match {
+    display: none;          /* toggled by JS */
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 7px;
+}
+
+.pw-match--ok  { color: #1c6b38; background: #e8f4ec; border: 1px solid #b0ddbf; }
+.pw-match--err { color: #c0392b; background: #fdecea; border: 1px solid #f5b7b1; }
+
+.pw-match .pw-req__icon { font-size: 11px; font-weight: 700; }
 
 /* ── DANGER ZONE ──────────────────────────── */
 .danger-row {
@@ -401,7 +451,6 @@ body {
     white-space: nowrap;
     transition: background 0.15s, color 0.15s;
 }
-
 .profile-btn-danger:hover {
     background: #c0392b;
     color: #fff;
@@ -409,14 +458,14 @@ body {
 
 /* ── RESPONSIVE ───────────────────────────── */
 @media (max-width: 900px) {
-    .profile-layout { grid-template-columns: 1fr; }
-    .profile-card--avatar { position: static; }
-    .profile-fields--3col { grid-template-columns: 1fr 1fr; }
+    .profile-layout          { grid-template-columns: 1fr; }
+    .profile-card--avatar    { position: static; }
+    .profile-fields--3col    { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 600px) {
-    .profile-fields { grid-template-columns: 1fr; }
-    .profile-fields--3col { grid-template-columns: 1fr; }
-    .danger-row { flex-direction: column; align-items: flex-start; }
-    .profile-page { padding: 16px 16px 40px; }
+    .profile-fields           { grid-template-columns: 1fr; }
+    .profile-fields--3col     { grid-template-columns: 1fr; }
+    .danger-row               { flex-direction: column; align-items: flex-start; }
+    .profile-page             { padding: 16px 16px 40px; }
 }

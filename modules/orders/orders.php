@@ -35,6 +35,7 @@ $menu_items = [
     ['id'=>4,'name'=>'Tori Floss Maki',    'price'=>149,'category'=>'sushi','image'=>'assets/images/torifloss.png'],
     ['id'=>5,'name'=>'Ebi Tempura Roll',   'price'=>149,'category'=>'sushi','image'=>'assets/images/ebitemp.png'],
     ['id'=>6,'name'=>'Mango Craze',        'price'=>139,'category'=>'sushi','image'=>'assets/images/mangocraze.png'],
+    ['id'=>9,'name'=>'California Maki',   'price'=>139,'category'=>'sushi','image'=>'assets/images/calimaki.png'],
     ['id'=>7,'name'=>'Garden Maki',        'price'=>179,'category'=>'sushi','image'=>'assets/images/gardenmaki.png'],
     ['id'=>8,'name'=>'Red Hot Chili Roll', 'price'=>189,'category'=>'sushi','image'=>'assets/images/redhotchili.png'],
 ];
