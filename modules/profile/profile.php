@@ -23,7 +23,7 @@ $error_msg   = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // edit_profile
+    // ── Edit Profile ───────────────────────────────────────────────────────
     if (isset($_POST['action']) && $_POST['action'] === 'edit_profile') {
         $full_name = trim($_POST['full_name'] ?? '');
         $username  = trim($_POST['username']  ?? '');
@@ -42,36 +42,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $success_msg = 'Profile updated successfully.';
     }
 
-    // change_password
+    // ── Change Password (with strong validation) ───────────────────────────
     if (isset($_POST['action']) && $_POST['action'] === 'change_password') {
         $current = $_POST['current_password'] ?? '';
         $new_pw  = $_POST['new_password']     ?? '';
         $confirm = $_POST['confirm_password'] ?? '';
 
-        if (!password_verify($current, $user['password'])) {
+        // Always re-fetch password hash from DB
+        $pw_stmt = $pdo->prepare("SELECT password FROM users WHERE id = 1");
+        $pw_stmt->execute();
+        $pw_row = $pw_stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$pw_row || !password_verify($current, $pw_row['password'])) {
             $error_msg = 'Current password is incorrect.';
+        } elseif (strlen($new_pw) < 8) {
+            $error_msg = 'Password must be at least 8 characters.';
+        } elseif (!preg_match('/[A-Z]/', $new_pw)) {
+            $error_msg = 'Password must contain at least one uppercase letter (A–Z).';
+        } elseif (!preg_match('/[0-9]/', $new_pw)) {
+            $error_msg = 'Password must contain at least one number (0–9).';
+        } elseif (!preg_match('/[\W_]/', $new_pw)) {
+            $error_msg = 'Password must contain at least one special character (!@#$...).';
         } elseif ($new_pw !== $confirm) {
             $error_msg = 'New passwords do not match.';
-        } elseif (strlen($new_pw) < 6) {
-            $error_msg = 'Password must be at least 6 characters.';
         } else {
             $hashed = password_hash($new_pw, PASSWORD_BCRYPT);
-            $stmt = $pdo->prepare("UPDATE users SET password=? WHERE id=1");
-            $stmt->execute([$hashed]);
+            $upd = $pdo->prepare("UPDATE users SET password = ? WHERE id = 1");
+            $upd->execute([$hashed]);
             $success_msg = 'Password updated successfully.';
         }
     }
 
+    // ── Upload Avatar ──────────────────────────────────────────────────────
     if (isset($_POST['action']) && $_POST['action'] === 'upload_avatar') {
         if (!empty($_FILES['avatar']['name'])) {
-            $ext = pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION);
+            $ext      = pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION);
             $filename = 'avatar_' . time() . '.' . $ext;
-            $dest = __DIR__ . '/../../assets/images/avatars/' . $filename;
-            
+            $dest     = __DIR__ . '/../../assets/images/avatars/' . $filename;
+
             if (move_uploaded_file($_FILES['avatar']['tmp_name'], $dest)) {
                 $avatar_path = $base_url . 'assets/images/avatars/' . $filename;
-                $stmt = $pdo->prepare("UPDATE users SET avatar=? WHERE id=1");
-                $stmt->execute([$avatar_path]);
+                $upd = $pdo->prepare("UPDATE users SET avatar=? WHERE id=1");
+                $upd->execute([$avatar_path]);
                 $user['avatar'] = $avatar_path;
                 $success_msg = 'Avatar updated successfully.';
             }
@@ -110,11 +122,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <div class="profile-menu" id="profile-menu">
             <button class="profile-btn" id="profile-btn" aria-label="Profile">
-            <?php if (!empty($user['avatar'])): ?>
-                <img src="<?= htmlspecialchars($user['avatar']) ?>" class="profile-icon" alt="Profile" style="object-fit:cover;border-radius:50%;">
-            <?php else: ?>
-                <img src="<?= $base_url ?>assets/images/profile.png" class="profile-icon" alt="Profile">
-            <?php endif; ?>
+                <?php if (!empty($user['avatar'])): ?>
+                    <img src="<?= htmlspecialchars($user['avatar']) ?>" class="profile-icon" alt="Profile" style="object-fit:cover;border-radius:50%;">
+                <?php else: ?>
+                    <img src="<?= $base_url ?>assets/images/profile.png" class="profile-icon" alt="Profile">
+                <?php endif; ?>
             </button>
             <div class="profile-dropdown" id="profile-dropdown">
                 <a href="index.php?page=profile" class="dropdown-item">
@@ -232,19 +244,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="profile-fields">
                         <div class="profile-field">
                             <label class="profile-field__label">Full Name</label>
-                            <div class="profile-field__value" id="view-fullname"><?= htmlspecialchars($user['full_name']) ?></div>
+                            <div class="profile-field__value"><?= htmlspecialchars($user['full_name']) ?></div>
                         </div>
                         <div class="profile-field">
                             <label class="profile-field__label">Phone Number</label>
-                            <div class="profile-field__value" id="view-phone"><?= htmlspecialchars($user['phone'] ?? '') ?></div>
+                            <div class="profile-field__value"><?= htmlspecialchars($user['phone'] ?? '') ?></div>
                         </div>
                         <div class="profile-field">
                             <label class="profile-field__label">Username</label>
-                            <div class="profile-field__value" id="view-username"><?= htmlspecialchars($user['username']) ?></div>
+                            <div class="profile-field__value"><?= htmlspecialchars($user['username']) ?></div>
                         </div>
                         <div class="profile-field">
                             <label class="profile-field__label">Email</label>
-                            <div class="profile-field__value" id="view-email"><?= htmlspecialchars($user['email']) ?></div>
+                            <div class="profile-field__value"><?= htmlspecialchars($user['email']) ?></div>
                         </div>
                         <div class="profile-field">
                             <label class="profile-field__label">Status</label>
@@ -320,24 +332,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="profile-field">
                             <label class="profile-field__label">New Password</label>
                             <div class="profile-pw-wrap">
-                                <input class="profile-input" type="password" name="new_password" id="pw-new" placeholder="Enter new password">
+                                <input class="profile-input" type="password" name="new_password" id="pw-new" placeholder="Enter new password" autocomplete="new-password">
                                 <button type="button" class="pw-toggle" data-target="pw-new">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                 </button>
+                            </div>
+                            <!-- ── Live requirements checklist ── -->
+                            <div class="pw-requirements" id="pw-requirements">
+                                <div class="pw-req" id="req-length">
+                                    <span class="pw-req__icon">✗</span>
+                                    <span>At least 8 characters</span>
+                                </div>
+                                <div class="pw-req" id="req-upper">
+                                    <span class="pw-req__icon">✗</span>
+                                    <span>At least 1 uppercase letter (A–Z)</span>
+                                </div>
+                                <div class="pw-req" id="req-number">
+                                    <span class="pw-req__icon">✗</span>
+                                    <span>At least 1 number (0–9)</span>
+                                </div>
+                                <div class="pw-req" id="req-special">
+                                    <span class="pw-req__icon">✗</span>
+                                    <span>At least 1 special character (!@#$...)</span>
+                                </div>
                             </div>
                         </div>
                         <div class="profile-field">
                             <label class="profile-field__label">Confirm New Password</label>
                             <div class="profile-pw-wrap">
-                                <input class="profile-input" type="password" name="confirm_password" id="pw-confirm" placeholder="Confirm new password">
+                                <input class="profile-input" type="password" name="confirm_password" id="pw-confirm" placeholder="Confirm new password" autocomplete="new-password">
                                 <button type="button" class="pw-toggle" data-target="pw-confirm">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                 </button>
                             </div>
+                            <!-- Match indicator -->
+                            <div class="pw-match" id="pw-match" style="display:none;"></div>
                         </div>
                     </div>
                     <div class="profile-form-actions profile-form-actions--right">
-                        <button type="submit" class="profile-btn-gold">
+                        <button type="submit" class="profile-btn-gold" id="pw-submit-btn">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
