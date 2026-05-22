@@ -116,10 +116,6 @@
     });
   }
 
-  // ── LIVE ORDERS ────────────────────────────────────────────────────────
-  window.openLiveOrders = function () {
-    window.open("/Github/POS_SYSTEM/modules/statistics/live_orders.php","_blank","noopener,noreferrer");
-  };
 
   // ══════════════════════════════════════════════════════════════════════
   //  EXCEL EXPORT
@@ -490,8 +486,14 @@
   function activateChip(c)   { c.style.background=GOLD; c.style.color="#fff"; c.style.borderColor=GOLD; }
   function deactivateChip(c) { c.style.background="#F8F4E4"; c.style.color=GOLD; c.style.borderColor=CHIP_BORDER; }
 
-  window.filterTable = function () {
+window.filterTable = function () {
     if (document.getElementById("filter-modal-overlay")) return;
+
+    // Check current section from URL
+    const _urlParams  = new URLSearchParams(window.location.search);
+    const _curSection = (_urlParams.get('section') || '').toLowerCase();
+    const _showStatus = (_curSection === 'orders' || _curSection === '');
+
     const overlay = document.createElement("div");
     overlay.id = "filter-modal-overlay";
     overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:999999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px);`;
@@ -532,14 +534,16 @@
             </div>
           </div>
 
+          ${_showStatus ? `
           <div style="display:flex;align-items:center;gap:16px;">
             <div style="font-size:14px;font-weight:600;color:${GREEN};width:140px;">Status</div>
             <div style="display:flex;gap:8px;">
               <button class="filter-chip" data-group="status" data-value="all">All</button>
+              <button class="filter-chip" data-group="status" data-value="pending">Pending</button>
               <button class="filter-chip" data-group="status" data-value="served">Served</button>
               <button class="filter-chip" data-group="status" data-value="voided">Voided</button>
             </div>
-          </div>
+          </div>` : ''}
 
           <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:4px;">
             <button onclick="clearFilter()"
