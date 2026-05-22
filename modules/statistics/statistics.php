@@ -85,9 +85,9 @@ $high_date = $low_date = null;
 $bar_data   = [];
 
 if ($sidebar_open && $selected_section) {
-    $status_filter = "'pending','served'";
-    if ($selected_section === 'served') $status_filter = "'served'";
-    if ($selected_section === 'voids')  $status_filter = "'voided'";
+    if ($selected_section === 'served')      $status_filter = "'served'";
+    elseif ($selected_section === 'voids')   $status_filter = "'voided'";
+    else                                     $status_filter = "'pending','served','voided'";
 
     $order_by = "o.created_at DESC";
     if ($selected_section === 'served') $order_by = "o.served_at DESC";
