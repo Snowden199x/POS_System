@@ -116,10 +116,6 @@
     });
   }
 
-  // ── LIVE ORDERS ────────────────────────────────────────────────────────
-  window.openLiveOrders = function () {
-    window.open("/Github/POS_SYSTEM/modules/statistics/live_orders.php","_blank","noopener,noreferrer");
-  };
 
   // ══════════════════════════════════════════════════════════════════════
   //  EXCEL EXPORT

@@ -205,32 +205,6 @@
   white-space: nowrap;
 }
 
-/* Live Orders button — green with pulsing dot */
-.dash-action-btn--live {
-  background: #1C3924;
-  color: #fff;
-  box-shadow: 0 2px 10px rgba(28,57,36,0.25);
-}
-.dash-action-btn--live:hover {
-  background: #245a42;
-  box-shadow: 0 4px 16px rgba(28,57,36,0.35);
-  transform: translateY(-1px);
-}
-
-.live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #6EE784;
-  flex-shrink: 0;
-  animation: livePulse 1.4s ease-in-out infinite;
-}
-
-@keyframes livePulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.5; transform: scale(0.7); }
-}
-
 /* Excel button — gold outline */
 .dash-action-btn--excel {
   background: #fff;
