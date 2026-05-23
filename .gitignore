@@ -474,3 +474,4 @@ composer.lock
 
 electron/dist/
 electron/node_modules/
+db/mail_config.php

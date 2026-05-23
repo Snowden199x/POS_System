@@ -95,6 +95,23 @@ body {
     display: flex;
     flex-direction: column;
     gap: 14px;
+    align-items: stretch;
+}
+.forgot-link-wrap {
+    text-align: right;
+    width: 100%;
+    margin-top: -6px;
+}
+
+.forgot-link {
+    font-size: 12px;
+    color: #7A7A5A;
+    text-decoration: none;
+}
+
+.forgot-link:hover {
+    color: #C8A84B;
+    text-decoration: underline;
 }
 
 .form-group {
@@ -219,6 +236,9 @@ input:focus {
             </div>
         </div>
 
+        <div class="forgot-link-wrap">
+            <a href="modules/forgot-password/forgot_password.php" class="forgot-link">Forgot Password?</a>
+        </div>
         <button type="submit" class="login-btn">Login</button>
     </form>
 </div>
