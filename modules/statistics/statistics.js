@@ -385,13 +385,12 @@
     XLSX.utils.book_append_sheet(wb, ws1, "Orders");
 
     // ── SHEET 2: DAILY SUMMARY ────────────────────────────────────────
-    const dailyHeaders = ["Date","Total Orders","Served","Pending","Voided",
-      "Total Sales (₱)","Total Discounts (₱)"];
+    const dailyHeaders = ["Date","Total Orders","Served","Voided",
+  "Total Sales (₱)","Total Discounts (₱)"];
     const dailyRows = (data.daily||[]).map((d)=>[
-      formatDate(d.d),   // ← plain string date
+      formatDate(d.d),
       parseInt(d.total_orders||0),
       parseInt(d.served||0),
-      parseInt(d.pending||0),
       parseInt(d.voided||0),
       parseFloat(d.total_sales||0),
       parseFloat(d.total_discounts||0),
@@ -399,30 +398,30 @@
     const ws2 = makeSheet(
       `TWIST & ROLL POS — Daily Summary — ${mFull[dailyMonth-1]} ${year}`,
       dailyHeaders, dailyRows,
-      [22,14,10,10,10,18,20], null
+      [22,14,10,10,18,20], null
     );
     XLSX.utils.book_append_sheet(wb, ws2, "Daily Summary");
 
     // ── SHEET 3: WEEKLY ───────────────────────────────────────────────
     const weeklyHeaders = ["Week #","Week Start","Week End","Total Orders",
-      "Served","Pending","Voided","Total Sales (₱)","Total Discounts (₱)"];
+  "Served","Voided","Total Sales (₱)","Total Discounts (₱)"];
     const weeklyRows = (data.weekly||[]).map((w,i)=>[
       i+1,
-      formatDate(w.week_start),   // ← plain string
-      formatDate(w.week_end),     // ← plain string
+      formatDate(w.week_start),
+      formatDate(w.week_end),
       parseInt(w.total_orders||0), parseInt(w.served||0),
-      parseInt(w.pending||0),      parseInt(w.voided||0),
+      parseInt(w.voided||0),
       parseFloat(w.total_sales||0), parseFloat(w.total_discounts||0),
     ]);
     const ws3 = makeSheet(
       `TWIST & ROLL POS — Weekly Summary${filterLabel}`,
       weeklyHeaders, weeklyRows,
-      [8,22,22,14,10,10,10,18,20], null
+      [8,22,22,14,10,10,18,20], null
     );
     XLSX.utils.book_append_sheet(wb, ws3, "Weekly Summary");
 
     // ── SHEET 4: MONTHLY (all 12, zeros for empty) ────────────────────
-    const monthlyHeaders = ["Month","Total Orders","Served","Pending","Voided",
+    const monthlyHeaders = ["Month","Total Orders","Served","Voided",
       "Total Sales (₱)","Total Discounts (₱)","Avg Order (₱)"];
     const byMo = {};
     (data.monthly||[]).forEach((m)=>{ byMo[parseInt(m.mo)]=m; });
@@ -431,30 +430,30 @@
       const m=byMo[mo];
       monthlyFull.push(m
         ? [mFull[mo-1],parseInt(m.total_orders||0),parseInt(m.served||0),
-           parseInt(m.pending||0),parseInt(m.voided||0),
+           parseInt(m.voided||0),
            parseFloat(m.total_sales||0),parseFloat(m.total_discounts||0),parseFloat(m.avg_order||0)]
-        : [mFull[mo-1],0,0,0,0,0,0,0]
+        : [mFull[mo-1],0,0,0,0,0,0]
       );
     }
     const ws4 = makeSheet(
       `TWIST & ROLL POS — Monthly Summary — ${year}`,
       monthlyHeaders, monthlyFull,
-      [14,14,10,10,10,18,20,16], null
+      [14,14,10,10,18,20,16], null
     );
     XLSX.utils.book_append_sheet(wb, ws4, "Monthly Summary");
 
     // ── SHEET 5: ANNUAL ───────────────────────────────────────────────
-    const annualHeaders = ["Year","Total Orders","Served","Pending","Voided",
+    const annualHeaders = ["Year","Total Orders","Served","Voided",
       "Total Sales (₱)","Total Discounts (₱)"];
     const annualRows = (data.annual||[]).map((a)=>[
       a.yr,parseInt(a.total_orders||0),parseInt(a.served||0),
-      parseInt(a.pending||0),parseInt(a.voided||0),
+      parseInt(a.voided||0),
       parseFloat(a.total_sales||0),parseFloat(a.total_discounts||0),
     ]);
     const ws5 = makeSheet(
       `TWIST & ROLL POS — Annual Summary`,
       annualHeaders, annualRows,
-      [10,14,10,10,10,18,20], null
+      [10,14,10,10,18,20], null
     );
     XLSX.utils.book_append_sheet(wb, ws5, "Annual Summary");
 
