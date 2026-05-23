@@ -64,12 +64,12 @@ $monthly_trend_stmt->execute([$selected_year]);
 $monthly_trend = $monthly_trend_stmt->fetchAll();
 
 // ── SIDEBAR DATA ──────────────────────────────────────────────────────────
-$annual_stmt = $pdo->prepare("SELECT MONTH(created_at) as mo, COALESCE(SUM(total),0) as total, COUNT(*) as orders, COUNT(CASE WHEN status='served' THEN 1 END) as served FROM orders WHERE YEAR(created_at)=? AND status IN ('pending','served') GROUP BY MONTH(created_at) ORDER BY mo");
+$annual_stmt = $pdo->prepare("SELECT MONTH(created_at) as mo, COALESCE(SUM(total),0) as total, COUNT(*) as orders, COUNT(CASE WHEN status='served' THEN 1 END) as served FROM orders WHERE YEAR(created_at)=? AND status = 'served' GROUP BY MONTH(created_at) ORDER BY mo");
 $annual_stmt->execute([$selected_year]);
 $annual_by_month = [];
 foreach ($annual_stmt->fetchAll() as $r) $annual_by_month[$r['mo']] = $r;
 
-$annual_total_stmt = $pdo->prepare("SELECT COALESCE(SUM(total),0) FROM orders WHERE YEAR(created_at)=? AND status IN ('pending','served')");
+$annual_total_stmt = $pdo->prepare("SELECT COALESCE(SUM(total),0) FROM orders WHERE YEAR(created_at)=? AND status = 'served'");
 $annual_total_stmt->execute([$selected_year]);
 $annual_total = $annual_total_stmt->fetchColumn();
 
