@@ -284,6 +284,9 @@
   }
 
   function ucfirst(str) { return str ? str.charAt(0).toUpperCase()+str.slice(1) : ""; }
+  function fmtMoney(val) {
+    return parseFloat(val||0).toLocaleString('en-PH', {minimumFractionDigits:0, maximumFractionDigits:2});
+}
 
   // ── Build Excel workbook ───────────────────────────────────────────────
   function buildAllSheetsExcel(data, year, filterMonth) {
@@ -365,12 +368,12 @@
       ucfirst(o.payment_method),
       o.gcash_reference        || "—",
       o.gcash_reference_extra  || "—",
-      parseFloat(o.gcash_extra_amount||0),
-      parseFloat(o.subtotal||0),
-      parseFloat(o.discount||0),
-      parseFloat(o.refund_amount||0),
-      parseFloat(o.total||0),
-      parseFloat(o.change_amount||0),
+      fmtMoney(o.gcash_extra_amount||0),
+      fmtMoney(o.subtotal||0),
+      fmtMoney(o.discount||0),
+      fmtMoney(o.refund_amount||0),
+      fmtMoney(o.total||0),
+      fmtMoney(o.change_amount||0),
       ucfirst(o.status),
       // ── Both dates as plain readable strings ───────────────────────
       o.created_at ? formatDate(o.created_at.split(" ")[0]) : "—",
@@ -392,8 +395,8 @@
       parseInt(d.total_orders||0),
       parseInt(d.served||0),
       parseInt(d.voided||0),
-      parseFloat(d.total_sales||0),
-      parseFloat(d.total_discounts||0),
+      fmtMoney(d.total_sales||0),
+      fmtMoney(d.total_discounts||0),
     ]);
     const ws2 = makeSheet(
       `TWIST & ROLL POS — Daily Summary — ${mFull[dailyMonth-1]} ${year}`,
@@ -411,7 +414,7 @@
       formatDate(w.week_end),
       parseInt(w.total_orders||0), parseInt(w.served||0),
       parseInt(w.voided||0),
-      parseFloat(w.total_sales||0), parseFloat(w.total_discounts||0),
+      fmtMoney(w.total_sales||0), fmtMoney(w.total_discounts||0),
     ]);
     const ws3 = makeSheet(
       `TWIST & ROLL POS — Weekly Summary${filterLabel}`,
@@ -431,8 +434,8 @@
       monthlyFull.push(m
         ? [mFull[mo-1],parseInt(m.total_orders||0),parseInt(m.served||0),
            parseInt(m.voided||0),
-           parseFloat(m.total_sales||0),parseFloat(m.total_discounts||0),parseFloat(m.avg_order||0)]
-        : [mFull[mo-1],0,0,0,0,0,0]
+           fmtMoney(m.total_sales||0),fmtMoney(m.total_discounts||0),fmtMoney(m.avg_order||0)]
+        : [mFull[mo-1],0,0,0,'0','0','0']
       );
     }
     const ws4 = makeSheet(
@@ -448,7 +451,7 @@
     const annualRows = (data.annual||[]).map((a)=>[
       a.yr,parseInt(a.total_orders||0),parseInt(a.served||0),
       parseInt(a.voided||0),
-      parseFloat(a.total_sales||0),parseFloat(a.total_discounts||0),
+      fmtMoney(a.total_sales||0),fmtMoney(a.total_discounts||0),
     ]);
     const ws5 = makeSheet(
       `TWIST & ROLL POS — Annual Summary`,
@@ -462,7 +465,7 @@
     const topRows = (data.top_items||[]).map((item,i)=>[
       i+1, item.name,
       parseInt(item.total_qty||0),
-      parseFloat(item.total_revenue||0),
+      fmtMoney(item.total_revenue||0),
     ]);
     const ws6 = makeSheet(
       `TWIST & ROLL POS — Top Items — ${mFull[dailyMonth-1]} ${year}`,
