@@ -228,7 +228,7 @@
         if (isGcash) {
             // GCash: reference number required
             const ref = gcashRefInput ? gcashRefInput.value.trim() : '';
-            if (!ref) canPlace = false;
+            if (ref.length !== 13) canPlace = false;
         }
 
         placeOrderBtn.disabled = !canPlace;
@@ -318,16 +318,20 @@
     // ── GCash reference input ──────────────────────────────────────────────
     if (gcashRefInput) {
         gcashRefInput.addEventListener('input', () => {
-            const val = gcashRefInput.value.trim();
-            if (!val) {
-                if (gcashRefWrap)  gcashRefWrap.classList.add('beeper-error');
-                if (gcashRefError) gcashRefError.classList.add('visible');
-            } else {
-                if (gcashRefWrap)  gcashRefWrap.classList.remove('beeper-error');
-                if (gcashRefError) gcashRefError.classList.remove('visible');
-            }
-            updatePlaceOrderState();
-        });
+        // Strip non-digits so only numbers can be typed
+        gcashRefInput.value = gcashRefInput.value.replace(/\D/g, '').slice(0, 13);
+        const val = gcashRefInput.value;
+        // Only show error if they've started typing but haven't reached 13 yet
+        if (val.length > 0 && val.length < 13) {
+            if (gcashRefWrap)  gcashRefWrap.classList.add('beeper-error');
+            if (gcashRefError) gcashRefError.style.cssText = 'display:block;color:#e74c3c;font-size:12px;';
+            if (gcashRefError) gcashRefError.textContent = `${val.length}/13 digits`;
+        } else {
+            if (gcashRefWrap)  gcashRefWrap.classList.remove('beeper-error');
+            if (gcashRefError) gcashRefError.style.display = 'none';
+        }
+        updatePlaceOrderState();
+    });
     }
 
     // ── Place Order ────────────────────────────────────────────────────────

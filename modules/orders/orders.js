@@ -403,10 +403,11 @@
                     <label style="font-size:12.5px;font-weight:600;color:#1C3924;display:block;margin-bottom:6px;">
                         GCash Ref # for additional ₱${absDiff}
                     </label>
-                    <input id="gcash-extra-ref-input" type="text" placeholder="Enter reference number"
-                        style="width:100%;padding:10px 14px;border-radius:12px;border:1.5px solid #D8C36F;
-                        font-family:'Poppins',sans-serif;font-size:13.5px;color:#1C3924;
-                        background:#fff;outline:none;box-sizing:border-box;">
+                    <input id="gcash-extra-ref-input" type="text" placeholder="Enter 13-digit reference number"
+                    maxlength="13" inputmode="numeric"
+                    style="width:100%;padding:10px 14px;border-radius:12px;border:1.5px solid #D8C36F;
+                    font-family:'Poppins',sans-serif;font-size:13.5px;color:#1C3924;
+                    background:#fff;outline:none;box-sizing:border-box;">
                 </div>` : `
                 <div style="margin-bottom:16px;background:rgba(192,57,43,0.06);border-radius:12px;padding:14px 16px;">
                     <p style="font-size:13px;font-weight:600;color:#C0392B;margin:0;">
@@ -435,10 +436,33 @@
 
         document.body.appendChild(overlay);
 
+        // Strip non-digits and enforce 13 digits
+        const extraRefInput = document.getElementById('gcash-extra-ref-input');
+        if (extraRefInput) {
+            extraRefInput.addEventListener('input', () => {
+                extraRefInput.value = extraRefInput.value.replace(/\D/g, '').slice(0, 13);
+            });
+        }
+
         document.getElementById('gcash-diff-confirm').addEventListener('click', () => {
             const refInput = document.getElementById('gcash-extra-ref-input');
-            if (isAddition && refInput && !refInput.value.trim()) {
-                refInput.style.borderColor = '#C0392B'; refInput.focus(); return;
+            if (refInput) {
+                // Strip non-digits
+                refInput.value = refInput.value.replace(/\D/g, '').slice(0, 13);
+            }
+            if (isAddition && refInput && refInput.value.replace(/\D/g,'').length !== 13) {
+                refInput.style.borderColor = '#C0392B';
+                refInput.focus();
+                let errMsg = document.getElementById('gcash-extra-ref-error');
+                if (!errMsg) {
+                    errMsg = document.createElement('p');
+                    errMsg.id = 'gcash-extra-ref-error';
+                    errMsg.style.cssText = 'color:#C0392B;font-size:12px;margin:4px 0 0;font-family:Poppins,sans-serif;';
+                    refInput.parentNode.appendChild(errMsg);
+                }
+                const cur = refInput.value.replace(/\D/g,'').length;
+                errMsg.textContent = cur === 0 ? 'GCash reference number is required.' : `${cur}/13 digits — must be exactly 13.`;
+                return;
             }
             const extraRef    = refInput ? refInput.value.trim() : null;
             const extraAmount = isAddition ? parseFloat(absDiff) : 0;
