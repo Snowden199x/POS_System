@@ -22,7 +22,10 @@ try {
     $pdo->beginTransaction();
 
     $gcashRef = trim($data['gcash_reference'] ?? '');
-
+    if (!empty($gcashRef) && !preg_match('/^\d{13}$/', $gcashRef)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid GCash reference number.']);
+        exit();
+    }
     $stmt = $pdo->prepare("
         INSERT INTO orders
             (beeper_number, order_type, payment_method, amount_paid, gcash_reference,

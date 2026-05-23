@@ -30,6 +30,12 @@ try {
     $gcash_extra_amount = $data['gcash_extra_amount'] ?? 0;  // amount of extra gcash payment
     $refund_amount      = $data['refund_amount']   ?? 0;     // refund if cheaper
 
+    // Validate extra GCash ref if provided
+    if (!empty($gcash_extra_ref) && !preg_match('/^\d{13}$/', $gcash_extra_ref)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid GCash reference number. Must be 13 digits.']);
+        exit();
+    }
+
     $stmt = $pdo->prepare("
         UPDATE orders
         SET

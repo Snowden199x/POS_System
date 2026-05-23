@@ -189,7 +189,7 @@ $discount_map = [
         <div id="gcash-wrap" style="display:none;">
             <div class="order-panel__beeper" id="gcash-ref-wrap">
                 <label class="beeper-label" for="gcash-ref" style="white-space:nowrap;">Ref #</label>
-                <input type="text" class="beeper-input" id="gcash-ref" placeholder="GCash reference number" maxlength="50">
+                <input type="text" class="beeper-input" id="gcash-ref" placeholder="GCash reference number (13 digits)" maxlength="13" minlength="13" inputmode="numeric" pattern="\d{13}">
             </div>
             <p class="beeper-error-msg" id="gcash-ref-error">GCash reference number is required.</p>
         </div>
