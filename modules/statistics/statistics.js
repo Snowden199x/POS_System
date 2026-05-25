@@ -385,6 +385,7 @@
       [10,10,40,12,12,20,20,14,12,12,12,12,12,12,22,22],
       13
     );
+    ws1["!autofilter"] = { ref: "O3:O3" };
     XLSX.utils.book_append_sheet(wb, ws1, "Orders");
 
     // ── SHEET 2: DAILY SUMMARY ────────────────────────────────────────
