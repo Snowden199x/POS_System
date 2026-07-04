@@ -323,6 +323,123 @@
     cursor: not-allowed;
 }
 
+/* ── DAY FILTER ADDITIONS ─────────────────────
+   Append these rules to the bottom of served.css
+   ─────────────────────────────────────────────── */
+
+/* Divider dot between type filters and day filters */
+.served-filter-divider {
+    display: flex;
+    align-items: center;
+    color: var(--border-dark);
+    font-size: 18px;
+    line-height: 1;
+    padding: 0 2px;
+    user-select: none;
+}
+
+/* Day filter buttons — slightly smaller than type buttons */
+.served-filter--day {
+    padding: 8px 14px;
+    font-size: 12.5px;
+}
+
+/* Active state for day buttons — gold instead of green
+   so it's visually distinct from the type filters      */
+.served-filter--day.active {
+    background: var(--gold-100);
+    color: var(--white);
+    border-color: var(--gold-100);
+}
+
+.served-filter--day:hover:not(.active) {
+    border-color: var(--gold-100);
+    color: var(--gold-100);
+}
+
+/* Allow the filters row to wrap on smaller screens */
+.served-filters {
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* ── DAY DROPDOWN ─────────────────────────────────────────────────────── */
+.served-day-dropdown {
+    position: relative;
+}
+
+.served-day-dropdown__btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--border-dark);
+    background: transparent;
+    color: var(--green-100);
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+}
+
+.served-day-dropdown__btn:hover {
+    border-color: var(--green-100);
+}
+
+.served-day-dropdown__btn--active {
+    background: var(--gold-100);
+    color: var(--white);
+    border-color: var(--gold-100);
+}
+
+.served-day-dropdown__arrow {
+    font-size: 10px;
+    color: inherit;
+}
+
+.served-day-dropdown__menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: var(--white);
+    border: 1.5px solid var(--border-dark);
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+    z-index: 100;
+    min-width: 160px;
+    overflow: hidden;
+    padding: 6px;
+}
+
+.served-day-dropdown__menu.open {
+    display: block;
+}
+
+.served-day-option {
+    padding: 9px 14px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    color: var(--green-100);
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+
+.served-day-option:hover {
+    background: var(--gold-20);
+}
+
+.served-day-option--active {
+    background: var(--gold-20);
+    font-weight: 600;
+    color: var(--green-100);
+}
+
 /* ── RESPONSIVE ───────────────────────────── */
 @media (max-width: 1200px) {
     .served-grid { grid-template-columns: repeat(3, 1fr); }
@@ -338,3 +455,4 @@
     .served-grid { grid-template-columns: 1fr; }
     .served-page { padding: 16px; }
 }
+

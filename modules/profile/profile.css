@@ -455,6 +455,197 @@ body {
     background: #c0392b;
     color: #fff;
 }
+/* ══════════════════════════════════════════════
+   RECEIPT SETTINGS — append to bottom of profile.css
+   ══════════════════════════════════════════════ */
+
+/* Section label inside the receipt card */
+.receipt-section-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+/* Full-width field inside a 2-col grid */
+.profile-fields--2col {
+    grid-template-columns: 1fr 1fr;
+}
+
+.profile-field--full {
+    grid-column: 1 / -1;
+}
+
+/* Optional label hint */
+.label-optional {
+    font-weight: 400;
+    color: var(--text-light);
+    font-size: 11px;
+}
+
+/* Show/hide toggle rows */
+.receipt-toggles {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.receipt-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: #FFFDEC;
+    border: 1px solid rgba(216, 195, 111, 0.20);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.receipt-toggle-row:hover {
+    background: rgba(216, 195, 111, 0.10);
+}
+
+.receipt-toggle-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--green-100);
+}
+
+/* ── RECEIPT PREVIEW ──────────────────────────
+   Mimics a 58mm thermal receipt paper look    */
+.receipt-preview {
+    background: #fff;
+    border: 1.5px dashed var(--border-dark);
+    border-radius: 10px;
+    padding: 18px 20px;
+    max-width: 300px;
+    margin: 0 auto;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    color: #1a1a1a;
+    line-height: 1.6;
+}
+
+.rp-store-name {
+    font-size: 15px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 2px;
+}
+
+.rp-line {
+    text-align: center;
+    font-size: 11.5px;
+    color: #444;
+}
+
+.rp-placeholder {
+    color: #bbb;
+    font-style: italic;
+}
+
+.rp-header {
+    text-align: center;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.rp-divider {
+    border-top: 1px dashed #ccc;
+    margin: 6px 0;
+}
+
+.rp-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 1px 0;
+}
+
+.rp-discount {
+    color: #c0392b;
+}
+
+.rp-total {
+    font-weight: 700;
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+.rp-meta {
+    color: #555;
+    font-size: 11.5px;
+}
+
+.rp-footer {
+    text-align: center;
+    font-size: 11.5px;
+    color: #555;
+    margin-top: 4px;
+    font-style: italic;
+}
+
+/* ── TOGGLE SWITCH reuse (already in homepage.css,
+      duplicated here in case profile loads standalone) */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 19px;
+    flex-shrink: 0;
+}
+
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+
+.toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: var(--border-dark, #D0C9A8);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 13px; height: 13px;
+    left: 3px; top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 4px rgba(28,57,36,0.08);
+}
+
+.toggle-switch input:checked + .toggle-slider { background: var(--green-100, #1C3924); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(15px); }
+
+/* Responsive */
+@media (max-width: 600px) {
+    .profile-fields--2col { grid-template-columns: 1fr; }
+    .profile-field--full  { grid-column: 1; }
+}
+
+/* ── Gap between avatar card buttons ── */
+.profile-card--avatar .profile-btn-primary {
+    margin-bottom: 10px;
+}
+
+.profile-card--avatar .profile-btn-secondary {
+    margin-bottom: 10px;
+}
+
+.profile-card--avatar .profile-btn-secondary:last-child {
+    margin-bottom: 0;
+}
+
+/* ── Avatar card button container gap ── */
+.profile-card--avatar {
+    gap: 10px;
+}
 
 /* ── RESPONSIVE ───────────────────────────── */
 @media (max-width: 900px) {

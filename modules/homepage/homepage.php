@@ -9,9 +9,12 @@ $current_page = isset($_GET['page']) ? $_GET['page'] : 'home';
 
 require_once __DIR__ . '/../../db/connection.php';
 
-$stmt_user = $pdo->prepare("SELECT avatar FROM users WHERE id = 1");
-$stmt_user->execute();
-$nav_user = $stmt_user->fetch(PDO::FETCH_ASSOC);
+$branch_id   = $_SESSION['user_id']     ?? 1;
+$branch_name = $_SESSION['branch_name'] ?? 'Main Branch';
+ 
+$stmt_user = $pdo->prepare("SELECT avatar FROM users WHERE id = ?");
+$stmt_user->execute([$branch_id]);
+$nav_user    = $stmt_user->fetch(PDO::FETCH_ASSOC);
 
 $menu_items = [
     ['id' => 1, 'name' => 'Eruption',           'price' => 229, 'category' => 'sushi', 'image' => 'assets/images/eruption.png'],
@@ -48,15 +51,23 @@ $discount_map = [
         const DISCOUNT_MAP = <?= json_encode($discount_map) ?>;
         const MENU_ITEMS   = <?= json_encode(array_column($menu_items, null, 'id')) ?>;
     </script>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1C3924">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 </head>
 <body>
 
 <div class="toast-container" id="toast-container"></div>
 
 <header class="navbar">
-    <a href="index.php?page=home" class="navbar__logo-link">
-        <img src="<?= $base_url ?>assets/images/logo.png" alt="Twist &amp; Roll" class="navbar__logo-img">
-    </a>
+    <div class="navbar__logo-wrap">
+        <a href="index.php?page=home" class="navbar__logo-link">
+            <img src="<?= $base_url ?>assets/images/logo.png" alt="Twist &amp; Roll" class="navbar__logo-img">
+        </a>
+        <span class="branch-badge"><?= htmlspecialchars($branch_name) ?></span>
+    </div>
     <nav class="navbar__nav">
         <a href="index.php?page=home"       class="nav-link <?= $current_page==='home'       ?'nav-link--active':'' ?>">Home</a>
         <a href="index.php?page=orders"     class="nav-link <?= $current_page==='orders'     ?'nav-link--active':'' ?>">Orders</a>
@@ -206,7 +217,9 @@ $discount_map = [
     </aside>
 </main>
 
-<script src="<?= $base_url ?>assets/js/main.js"></script>
-<script src="<?= $base_url ?>modules/homepage/homepage.js"></script>
+    <script src="<?= $base_url ?>assets/js/main.js"></script>
+    <script src="<?= $base_url ?>assets/js/escpos_bluetooth.js"></script>
+    <script src="<?= $base_url ?>modules/homepage/homepage.js"></script>
+    <script src="/assets/js/pwa_register.js"></script>
 </body>
 </html>

@@ -9,12 +9,18 @@ $current_page = $_GET['page'] ?? 'orders';
 
 require_once __DIR__ . '/../../db/connection.php';
 
-$stmt_user = $pdo->prepare("SELECT avatar FROM users WHERE id = 1");
-$stmt_user->execute();
+// ── Branch filter ─────────────────────────────────────────────────────────
+$branch_id   = $_SESSION['user_id']     ?? 1;
+$branch_name = $_SESSION['branch_name'] ?? 'Main Branch';
+
+$stmt_user = $pdo->prepare("SELECT avatar FROM users WHERE id = ?");
+$stmt_user->execute([$branch_id]);
 $nav_user = $stmt_user->fetch(PDO::FETCH_ASSOC);
 
 date_default_timezone_set('Asia/Manila');
-$stmt = $pdo->query("
+
+// ── Fetch pending orders for this branch only ─────────────────────────────
+$stmt = $pdo->prepare("
     SELECT o.*,
            GROUP_CONCAT(oi.name         ORDER BY oi.id SEPARATOR '||') AS item_names,
            GROUP_CONCAT(oi.price        ORDER BY oi.id SEPARATOR '||') AS item_prices,
@@ -22,10 +28,11 @@ $stmt = $pdo->query("
            GROUP_CONCAT(oi.menu_item_id ORDER BY oi.id SEPARATOR '||') AS item_ids
     FROM orders o
     LEFT JOIN order_items oi ON oi.order_id = o.id
-    WHERE o.status = 'pending'
+    WHERE o.status = 'pending' AND o.branch_id = ?
     GROUP BY o.id
     ORDER BY o.created_at ASC
 ");
+$stmt->execute([$branch_id]);
 $orders = $stmt->fetchAll();
 
 $menu_items = [
@@ -35,7 +42,7 @@ $menu_items = [
     ['id'=>4,'name'=>'Tori Floss Maki',    'price'=>149,'category'=>'sushi','image'=>'assets/images/torifloss.png'],
     ['id'=>5,'name'=>'Ebi Tempura Roll',   'price'=>149,'category'=>'sushi','image'=>'assets/images/ebitemp.png'],
     ['id'=>6,'name'=>'Mango Craze',        'price'=>139,'category'=>'sushi','image'=>'assets/images/mangocraze.png'],
-    ['id'=>9,'name'=>'California Maki',   'price'=>139,'category'=>'sushi','image'=>'assets/images/calimaki.png'],
+    ['id'=>9,'name'=>'California Maki',    'price'=>139,'category'=>'sushi','image'=>'assets/images/calimaki.png'],
     ['id'=>7,'name'=>'Garden Maki',        'price'=>179,'category'=>'sushi','image'=>'assets/images/gardenmaki.png'],
     ['id'=>8,'name'=>'Red Hot Chili Roll', 'price'=>189,'category'=>'sushi','image'=>'assets/images/redhotchili.png'],
 ];
@@ -57,13 +64,21 @@ $discount_map = [229=>45,169=>33,159=>31,149=>29,139=>27,179=>36,189=>38];
         const DISCOUNT_MAP = <?= json_encode($discount_map) ?>;
         const BASE_URL     = '<?= $base_url ?>';
     </script>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1C3924">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 </head>
 <body>
 
 <header class="navbar">
+    <div class="navbar__logo-wrap">
     <a href="index.php?page=home" style="display:flex;align-items:center;">
         <img src="<?= $base_url ?>assets/images/logo.png" class="navbar__logo-img" alt="Twist & Roll">
     </a>
+    <span class="branch-badge"><?= htmlspecialchars($branch_name) ?></span>
+</div>
     <nav class="navbar__nav">
         <a href="index.php?page=home"       class="nav-link <?= $current_page==='home'       ?'nav-link--active':'' ?>">Home</a>
         <a href="index.php?page=orders"     class="nav-link <?= $current_page==='orders'     ?'nav-link--active':'' ?>">Orders</a>
@@ -75,6 +90,7 @@ $discount_map = [229=>45,169=>33,159=>31,149=>29,139=>27,179=>36,189=>38];
             <div id="current-day"  class="navbar__day"></div>
             <div id="current-date" class="navbar__date"></div>
         </div>
+        <!-- Branch name badge -->
         <div class="profile-menu">
             <button id="profile-btn" class="profile-btn">
                 <?php if (!empty($nav_user['avatar'])): ?>
@@ -224,10 +240,9 @@ $discount_map = [229=>45,169=>33,159=>31,149=>29,139=>27,179=>36,189=>38];
     </div>
 </div>
 
-<!-- EDIT MODAL -->
+<!-- EDIT MODAL — unchanged from original -->
 <div class="modal-overlay" id="editModal">
     <div class="edit-panel-modal">
-
         <div class="epm-header">
             <div>
                 <h2>Edit Order</h2>
@@ -235,30 +250,24 @@ $discount_map = [229=>45,169=>33,159=>31,149=>29,139=>27,179=>36,189=>38];
             </div>
             <button class="epm-close" id="editModalClose">×</button>
         </div>
-
         <div class="order-panel__type" id="epm-type-wrap">
             <button type="button" class="type-btn type-btn--active" data-type="dine-in">Dine in</button>
             <button type="button" class="type-btn" data-type="take-out">Take out</button>
         </div>
         <input type="hidden" id="epm-type">
-
         <div class="order-panel__beeper">
             <span class="beeper-label">Beeper #</span>
             <input type="number" id="epm-beeper" class="beeper-input" placeholder="Enter beeper number" min="1">
         </div>
-
         <p class="epm-items-label">ORDER ITEMS</p>
         <div class="epm-items-list" id="epm-items-list"></div>
-
         <button type="button" class="epm-add-btn" id="epm-add-btn">add order +</button>
-
         <div class="epm-menu-picker" id="epm-menu-picker">
             <div class="epm-picker-filters">
                 <button class="epm-pf active" data-cat="all">All</button>
             </div>
             <div class="epm-picker-grid" id="epm-picker-grid"></div>
         </div>
-
         <div class="payment-summary">
             <p class="payment-summary__title">PAYMENT SUMMARY</p>
             <div class="payment-summary__row">
@@ -279,21 +288,15 @@ $discount_map = [229=>45,169=>33,159=>31,149=>29,139=>27,179=>36,189=>38];
                 <span class="total-amount" id="epm-total-val">Php 0.00</span>
             </div>
         </div>
-
         <div class="payment-methods" id="epm-payment-wrap">
             <button type="button" class="payment-btn payment-btn--active" data-method="cash">Cash</button>
             <button type="button" class="payment-btn" data-method="gcash">Gcash</button>
         </div>
         <input type="hidden" id="epm-payment">
-
-        <!-- Cash: amount paid -->
         <div class="amount-input-wrap" id="epm-amount-wrap">
             <input type="number" class="amount-input" id="epm-amount-input" placeholder="Amount Paid">
         </div>
-
-        <!-- GCash: original ref (read-only display) + extra ref input -->
         <div id="epm-gcash-section" style="display:none;">
-            <!-- Original reference (read-only) -->
             <div class="epm-gcash-orig" id="epm-gcash-orig-wrap">
                 <div class="order-panel__beeper" style="opacity:.7;pointer-events:none;">
                     <span class="beeper-label" style="white-space:nowrap;">Original Ref #</span>
@@ -301,18 +304,15 @@ $discount_map = [229=>45,169=>33,159=>31,149=>29,139=>27,179=>36,189=>38];
                 </div>
             </div>
         </div>
-
         <button type="button" class="place-order-btn" id="epm-total-btn" disabled>
             Place order – Php 0.00
         </button>
-
         <button type="button" class="epm-save-btn" id="epm-save-btn">Save Changes</button>
-
         <input type="hidden" id="epm-order-id">
     </div>
 </div>
 
-<!-- VOID MODAL -->
+<!-- VOID MODAL — unchanged from original -->
 <div class="modal-overlay" id="voidModal">
     <div class="delete-box">
         <div class="void-icon">
@@ -331,5 +331,6 @@ $discount_map = [229=>45,169=>33,159=>31,149=>29,139=>27,179=>36,189=>38];
 </div>
 
 <script src="<?= $base_url ?>modules/orders/orders.js"></script>
+ <script src="/assets/js/pwa_register.js"></script>
 </body>
 </html>

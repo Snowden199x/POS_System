@@ -11,9 +11,15 @@ if (!$data || empty($data['items'])) {
     exit();
 }
 
+// ── Branch ID comes from session (user_id = branch_id) ────────────────────
+$branch_id = $_SESSION['user_id'] ?? 1;
+
 try {
-    $beeperCheck = $pdo->prepare("SELECT id FROM orders WHERE beeper_number = ? AND status = 'pending'");
-    $beeperCheck->execute([$data['beeper_number']]);
+    $beeperCheck = $pdo->prepare("
+        SELECT id FROM orders
+        WHERE beeper_number = ? AND status = 'pending' AND branch_id = ?
+    ");
+    $beeperCheck->execute([$data['beeper_number'], $branch_id]);
     if ($beeperCheck->fetch()) {
         echo json_encode(['success' => false, 'message' => 'beeper_in_use']);
         exit();
@@ -26,13 +32,15 @@ try {
         echo json_encode(['success' => false, 'message' => 'Invalid GCash reference number.']);
         exit();
     }
+
     $stmt = $pdo->prepare("
         INSERT INTO orders
-            (beeper_number, order_type, payment_method, amount_paid, gcash_reference,
-             subtotal, discount, total, change_amount)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (branch_id, beeper_number, order_type, payment_method, amount_paid,
+             gcash_reference, subtotal, discount, total, change_amount)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     $stmt->execute([
+        $branch_id,
         $data['beeper_number'],
         $data['order_type'],
         $data['payment_method'],
