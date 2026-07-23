@@ -1,0 +1,107 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twist & Roll POS — Offline</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #FEFCE0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .card {
+            background: #fff;
+            border: 1.5px solid rgba(216,195,111,0.4);
+            border-radius: 28px;
+            padding: 48px 40px;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(28,57,36,0.10);
+        }
+
+        .icon {
+            width: 72px;
+            height: 72px;
+            background: rgba(216,195,111,0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1C3924;
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 14px;
+            color: #5A6B5E;
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            background: #1C3924;
+            color: #fff;
+            border: none;
+            border-radius: 999px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.18s;
+            text-decoration: none;
+        }
+
+        .btn:hover { background: #2d5c38; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#D8C36F" stroke-width="2">
+                <line x1="1" y1="1" x2="23" y2="23"/>
+                <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+                <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+                <path d="M10.71 5.05A16 16 0 0 1 22.56 9"/>
+                <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                <line x1="12" y1="20" x2="12.01" y2="20"/>
+            </svg>
+        </div>
+
+        <h1>You're Offline</h1>
+        <p>
+            The Twist & Roll POS needs a connection to the server.<br>
+            Please check your WiFi and try again.
+        </p>
+
+        <button class="btn" onclick="window.location.reload()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="23 4 23 10 17 10"/>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            Try Again
+        </button>
+    </div>
+</body>
+</html>

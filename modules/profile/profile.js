@@ -19,10 +19,10 @@
   setInterval(updateClock, 1000);
 
   // ── PROFILE DROPDOWN ───────────────────────────────────────────────────
-  const profileBtn  = document.getElementById("profile-btn");
-  const dropdown    = document.getElementById("profile-dropdown");
-  const logoutBtn   = document.getElementById("logout-btn");
-  const dangerLogout= document.getElementById("danger-logout-btn");
+  const profileBtn   = document.getElementById("profile-btn");
+  const dropdown     = document.getElementById("profile-dropdown");
+  const logoutBtn    = document.getElementById("logout-btn");
+  const dangerLogout = document.getElementById("danger-logout-btn");
 
   if (profileBtn && dropdown) {
     profileBtn.addEventListener("click", (e) => {
@@ -42,21 +42,21 @@
   const cancelEditBtn = document.getElementById("cancel-edit-btn");
 
   function showEditMode() {
-    if (accountView)   accountView.style.display   = "none";
-    if (accountEdit)   accountEdit.style.display   = "block";
-    if (inlineEditBtn) inlineEditBtn.style.display  = "none";
+    if (accountView)   accountView.style.display  = "none";
+    if (accountEdit)   accountEdit.style.display  = "block";
+    if (inlineEditBtn) inlineEditBtn.style.display = "none";
   }
   function showViewMode() {
-    if (accountView)   accountView.style.display   = "block";
-    if (accountEdit)   accountEdit.style.display   = "none";
-    if (inlineEditBtn) inlineEditBtn.style.display  = "flex";
+    if (accountView)   accountView.style.display  = "block";
+    if (accountEdit)   accountEdit.style.display  = "none";
+    if (inlineEditBtn) inlineEditBtn.style.display = "flex";
   }
 
   if (openEditBtn)   openEditBtn.addEventListener("click",   showEditMode);
   if (inlineEditBtn) inlineEditBtn.addEventListener("click", showEditMode);
   if (cancelEditBtn) cancelEditBtn.addEventListener("click", showViewMode);
 
-  // ── CHANGE PASSWORD — scroll to security card ──────────────────────────
+  // ── SCROLL TO SECURITY CARD ────────────────────────────────────────────
   const openPwBtn    = document.getElementById("open-pw-btn");
   const securityCard = document.getElementById("security-card");
 
@@ -65,6 +65,16 @@
       securityCard.scrollIntoView({ behavior: "smooth", block: "start" });
       const firstInput = securityCard.querySelector('input[type="password"]');
       if (firstInput) setTimeout(() => firstInput.focus(), 400);
+    });
+  }
+
+  // ── SCROLL TO RECEIPT CARD ─────────────────────────────────────────────
+  const openReceiptBtn = document.getElementById("open-receipt-btn");
+  const receiptCard    = document.getElementById("receipt-card");
+
+  if (openReceiptBtn && receiptCard) {
+    openReceiptBtn.addEventListener("click", () => {
+      receiptCard.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }
 
@@ -96,18 +106,17 @@
   const pwSubmitBtn = document.getElementById("pw-submit-btn");
 
   const rules = [
-    { id: "req-length",  test: (v) => v.length >= 8,            label: "At least 8 characters" },
-    { id: "req-upper",   test: (v) => /[A-Z]/.test(v),          label: "At least 1 uppercase letter (A–Z)" },
-    { id: "req-number",  test: (v) => /[0-9]/.test(v),          label: "At least 1 number (0–9)" },
-    { id: "req-special", test: (v) => /[\W_]/.test(v),          label: "At least 1 special character (!@#$...)" },
+    { id: "req-length",  test: (v) => v.length >= 8      },
+    { id: "req-upper",   test: (v) => /[A-Z]/.test(v)    },
+    { id: "req-number",  test: (v) => /[0-9]/.test(v)    },
+    { id: "req-special", test: (v) => /[\W_]/.test(v)    },
   ];
 
   function checkRequirements() {
-    const val         = pwNewInput ? pwNewInput.value : "";
-    const hasValue    = val.length > 0;
-    let   allPassed   = true;
+    const val       = pwNewInput ? pwNewInput.value : "";
+    const hasValue  = val.length > 0;
+    let   allPassed = true;
 
-    // Show/hide the requirements box only when user has typed something
     if (pwReqs) pwReqs.style.display = hasValue ? "block" : "none";
 
     rules.forEach((rule) => {
@@ -115,15 +124,12 @@
       if (!el) return;
       const pass = rule.test(val);
       if (!pass) allPassed = false;
-
       const icon = el.querySelector(".pw-req__icon");
       if (pass) {
-        el.classList.add("pw-req--pass");
-        el.classList.remove("pw-req--fail");
+        el.classList.add("pw-req--pass"); el.classList.remove("pw-req--fail");
         if (icon) icon.textContent = "✓";
       } else {
-        el.classList.add("pw-req--fail");
-        el.classList.remove("pw-req--pass");
+        el.classList.add("pw-req--fail"); el.classList.remove("pw-req--pass");
         if (icon) icon.textContent = "✗";
       }
     });
@@ -136,72 +142,56 @@
     if (!pwConfirm || !pwNewInput || !pwMatch) return;
     const newVal     = pwNewInput.value;
     const confirmVal = pwConfirm.value;
-
-    if (!confirmVal) {
-      pwMatch.style.display = "none";
-      return;
-    }
-
+    if (!confirmVal) { pwMatch.style.display = "none"; return; }
     pwMatch.style.display = "flex";
-
     if (newVal === confirmVal) {
-      pwMatch.className  = "pw-match pw-match--ok";
-      pwMatch.innerHTML  = `<span class="pw-req__icon">✓</span> Passwords match`;
+      pwMatch.className = "pw-match pw-match--ok";
+      pwMatch.innerHTML = `<span class="pw-req__icon">✓</span> Passwords match`;
     } else {
-      pwMatch.className  = "pw-match pw-match--err";
-      pwMatch.innerHTML  = `<span class="pw-req__icon">✗</span> Passwords do not match`;
+      pwMatch.className = "pw-match pw-match--err";
+      pwMatch.innerHTML = `<span class="pw-req__icon">✗</span> Passwords do not match`;
     }
   }
 
   function updateSubmitBtn(allRulesPassed) {
     if (!pwSubmitBtn) return;
-    const confirmVal   = pwConfirm ? pwConfirm.value : "";
-    const newVal       = pwNewInput ? pwNewInput.value : "";
-    const matchesOk    = newVal === confirmVal && confirmVal.length > 0;
-    const canSubmit    = allRulesPassed && matchesOk;
-
-    pwSubmitBtn.disabled = !canSubmit;
+    const confirmVal = pwConfirm ? pwConfirm.value : "";
+    const newVal     = pwNewInput ? pwNewInput.value : "";
+    const canSubmit  = allRulesPassed && newVal === confirmVal && confirmVal.length > 0;
+    pwSubmitBtn.disabled      = !canSubmit;
     pwSubmitBtn.style.opacity = canSubmit ? "1" : "0.5";
     pwSubmitBtn.style.cursor  = canSubmit ? "pointer" : "not-allowed";
   }
 
   if (pwNewInput) {
-    // Hide requirements on load
-    if (pwReqs) pwReqs.style.display = "none";
+    if (pwReqs)  pwReqs.style.display  = "none";
     if (pwMatch) pwMatch.style.display = "none";
-
     pwNewInput.addEventListener("input", checkRequirements);
   }
   if (pwConfirm) {
     pwConfirm.addEventListener("input", () => {
       checkMatch();
-      // re-evaluate submit state
       const val       = pwNewInput ? pwNewInput.value : "";
       const allPassed = rules.every((r) => r.test(val));
       updateSubmitBtn(allPassed);
     });
   }
-
-  // Disable submit on page load until requirements met
   if (pwSubmitBtn) {
-    pwSubmitBtn.disabled = true;
+    pwSubmitBtn.disabled      = true;
     pwSubmitBtn.style.opacity = "0.5";
     pwSubmitBtn.style.cursor  = "not-allowed";
   }
 
-  // ── AVATAR PREVIEW & UPLOAD ────────────────────────────────────────────
-  const camBtn     = document.getElementById("avatar-cam-btn");
-  const avatarInput= document.getElementById("avatar-input");
-  const avatarWrap = document.querySelector(".avatar-wrap");
+  // ── AVATAR UPLOAD ──────────────────────────────────────────────────────
+  const camBtn      = document.getElementById("avatar-cam-btn");
+  const avatarInput = document.getElementById("avatar-input");
+  const avatarWrap  = document.querySelector(".avatar-wrap");
 
   if (camBtn && avatarInput) {
     camBtn.addEventListener("click", () => avatarInput.click());
-
     avatarInput.addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (!file) return;
-
-      // Preview immediately
       const reader = new FileReader();
       reader.onload = (ev) => {
         let img = avatarWrap.querySelector(".avatar-img");
@@ -209,18 +199,118 @@
         if (placeholder) placeholder.remove();
         if (!img) {
           img = document.createElement("img");
-          img.className = "avatar-img";
-          img.alt = "Avatar";
+          img.className = "avatar-img"; img.alt = "Avatar";
           avatarWrap.insertBefore(img, avatarWrap.firstChild);
         }
         img.src = ev.target.result;
       };
       reader.readAsDataURL(file);
-
-      // Auto-submit the avatar form
       const avatarForm = document.getElementById("avatar-form");
       if (avatarForm) avatarForm.submit();
     });
+  }
+
+  // ── STORE LOGO UPLOAD ───────────────────────────────────────────────────
+  const logoUploadBtn = document.getElementById("logo-upload-btn");
+  const logoInput     = document.getElementById("logo-input");
+  const logoPreviewImg = document.getElementById("logo-preview-img");
+
+  if (logoUploadBtn && logoInput) {
+    logoUploadBtn.addEventListener("click", () => logoInput.click());
+    logoInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        if (logoPreviewImg) logoPreviewImg.src = ev.target.result;
+        const rpLogo = document.getElementById("rp-logo");
+        if (rpLogo) rpLogo.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+      const logoForm = document.getElementById("logo-form");
+      if (logoForm) logoForm.submit();
+    });
+  }
+
+  // ── FACEBOOK QR CODE ─────────────────────────────────────────────────────
+  function renderFbQr(url) {
+    const qrWrap = document.getElementById("rp-qr-wrap");
+    const qrBox  = document.getElementById("rp-qr");
+    if (!qrWrap || !qrBox) return;
+
+    if (!url) {
+      qrWrap.style.display = "none";
+      return;
+    }
+    qrWrap.style.display = "";
+    qrBox.innerHTML = "";
+    if (typeof qrcode !== "function") return; // library not loaded, skip quietly
+
+    try {
+      const qr = qrcode(0, "M"); // type 0 = auto-detect smallest size
+      qr.addData(url);
+      qr.make();
+      qrBox.innerHTML = qr.createSvgTag({ cellSize: 3, margin: 2, scalable: true });
+    } catch (err) {
+      qrWrap.style.display = "none";
+    }
+  }
+
+  const initialFbUrl = document.getElementById("rp-qr-wrap")?.dataset.fbUrl || "";
+  renderFbQr(initialFbUrl);
+
+  const fbUrlInput = document.querySelector('[name="fb_page_url"]');
+  if (fbUrlInput) {
+    fbUrlInput.addEventListener("input", () => renderFbQr(fbUrlInput.value.trim()));
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  //  RECEIPT PREVIEW — live update as user types
+  // ══════════════════════════════════════════════════════════════════════
+  const receiptForm = document.getElementById("receipt-form");
+  if (receiptForm) {
+
+    // Helper: bind an input to a preview element's text content
+    function bindText(inputName, previewId, prefix) {
+      const input   = receiptForm.querySelector(`[name="${inputName}"]`);
+      const preview = document.getElementById(previewId);
+      if (!input || !preview) return;
+      input.addEventListener("input", () => {
+        const val = input.value.trim();
+        preview.textContent = val ? (prefix || "") + val : "";
+        preview.classList.toggle("rp-placeholder", !val);
+      });
+    }
+
+    // Helper: bind a checkbox to show/hide a preview row
+    function bindToggle(inputName, previewId) {
+      const input   = receiptForm.querySelector(`[name="${inputName}"]`);
+      const preview = document.getElementById(previewId);
+      if (!input || !preview) return;
+      input.addEventListener("change", () => {
+        preview.style.display = input.checked ? "" : "none";
+      });
+    }
+
+    bindText("store_name",     "rp-store-name");
+    bindText("store_address",  "rp-address");
+    bindText("store_contact",  "rp-contact");
+    bindText("store_tin",      "rp-tin", "TIN: ");
+    bindText("receipt_header", "rp-header");
+    bindText("receipt_footer", "rp-footer");
+
+    bindToggle("show_discount",   "rp-discount-row");
+    bindToggle("show_cashier",    "rp-cashier-row");
+    bindToggle("show_order_type", "rp-order-type-row");
+    bindToggle("show_beeper",     "rp-beeper-row");
+
+    // Dark mode — applies instantly, saved along with the rest of the form
+    const darkModeToggle = document.getElementById("dark-mode-toggle");
+    if (darkModeToggle) {
+      darkModeToggle.addEventListener("change", () => {
+        document.documentElement.setAttribute("data-theme", darkModeToggle.checked ? "dark" : "light");
+      });
+    }
   }
 
 })();

@@ -42,11 +42,9 @@
             profileDropdown.classList.toggle('open');
         });
     }
-
     document.addEventListener('click', () => {
         if (profileDropdown) profileDropdown.classList.remove('open');
     });
-
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
             window.location.href = logoutBtn.dataset.logoutUrl;
@@ -177,12 +175,10 @@
             if (o.qty <= 0) state.order = state.order.filter(x => x.id !== item.id);
             renderOrder();
         });
-
         row.querySelector('[data-action="inc"]').addEventListener('click', () => {
             const o = state.order.find(x => x.id === item.id);
             if (o) { o.qty++; renderOrder(); }
         });
-
         row.querySelector('.order-item__remove').addEventListener('click', () => {
             state.order = state.order.filter(x => x.id !== item.id);
             renderOrder();
@@ -215,18 +211,12 @@
         const isGcash   = state.paymentMethod === 'gcash';
 
         let canPlace = hasItems;
-
-        // Beeper required
         if (!beeper || parseInt(beeper) < 1) canPlace = false;
-
         if (isCash) {
-            // Cash: amount paid must be >= total
             const amount = parseFloat(amountInput.value) || 0;
             if (amount <= 0 || amount < total) canPlace = false;
         }
-
         if (isGcash) {
-            // GCash: reference number required
             const ref = gcashRefInput ? gcashRefInput.value.trim() : '';
             if (ref.length !== 13) canPlace = false;
         }
@@ -254,14 +244,11 @@
         const isCash  = state.paymentMethod === 'cash';
         const isGcash = state.paymentMethod === 'gcash';
 
-        // Cash
         amountWrap.style.display = isCash ? '' : 'none';
         if (!isCash) {
             changeDisplay.style.display = 'none';
             amountInput.value = '';
         }
-
-        // GCash
         if (gcashWrap) gcashWrap.style.display = isGcash ? '' : 'none';
         if (!isGcash && gcashRefInput) {
             gcashRefInput.value = '';
@@ -318,20 +305,113 @@
     // ── GCash reference input ──────────────────────────────────────────────
     if (gcashRefInput) {
         gcashRefInput.addEventListener('input', () => {
-        // Strip non-digits so only numbers can be typed
-        gcashRefInput.value = gcashRefInput.value.replace(/\D/g, '').slice(0, 13);
-        const val = gcashRefInput.value;
-        // Only show error if they've started typing but haven't reached 13 yet
-        if (val.length > 0 && val.length < 13) {
-            if (gcashRefWrap)  gcashRefWrap.classList.add('beeper-error');
-            if (gcashRefError) gcashRefError.style.cssText = 'display:block;color:#e74c3c;font-size:12px;';
-            if (gcashRefError) gcashRefError.textContent = `${val.length}/13 digits`;
+            gcashRefInput.value = gcashRefInput.value.replace(/\D/g, '').slice(0, 13);
+            const val = gcashRefInput.value;
+            if (val.length > 0 && val.length < 13) {
+                if (gcashRefWrap)  gcashRefWrap.classList.add('beeper-error');
+                if (gcashRefError) gcashRefError.style.cssText = 'display:block;color:#e74c3c;font-size:12px;';
+                if (gcashRefError) gcashRefError.textContent = `${val.length}/13 digits`;
+            } else {
+                if (gcashRefWrap)  gcashRefWrap.classList.remove('beeper-error');
+                if (gcashRefError) gcashRefError.style.display = 'none';
+            }
+            updatePlaceOrderState();
+        });
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  BLUETOOTH PRINTER
+    // ══════════════════════════════════════════════════════════════════════
+
+    // Inject the printer status button into the navbar right area
+    function injectPrinterStatusBtn() {
+        const navRight = document.querySelector('.navbar__right');
+        if (!navRight || document.getElementById('printer-status-btn')) return;
+
+        const btn = document.createElement('button');
+        btn.id        = 'printer-status-btn';
+        btn.className = 'printer-status-btn printer-status-btn--disconnected';
+        btn.title     = 'Connect receipt printer';
+        btn.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/>
+                <rect x="9" y="11" width="14" height="10" rx="1"/>
+                <line x1="12" y1="17" x2="12" y2="17"/>
+                <line x1="16" y1="17" x2="16" y2="17"/>
+            </svg>
+            <span id="printer-status-label">Printer</span>
+        `;
+        // Insert before the profile menu
+        const profileMenu = navRight.querySelector('.profile-menu');
+        navRight.insertBefore(btn, profileMenu);
+
+        btn.addEventListener('click', handlePrinterBtnClick);
+    }
+
+    function updatePrinterBtn(connected) {
+        const btn   = document.getElementById('printer-status-btn');
+        const label = document.getElementById('printer-status-label');
+        if (!btn) return;
+        if (connected) {
+            btn.className = 'printer-status-btn printer-status-btn--connected';
+            btn.title     = 'Printer connected — click to disconnect';
+            if (label) label.textContent = 'Connected';
         } else {
-            if (gcashRefWrap)  gcashRefWrap.classList.remove('beeper-error');
-            if (gcashRefError) gcashRefError.style.display = 'none';
+            btn.className = 'printer-status-btn printer-status-btn--disconnected';
+            btn.title     = 'Connect receipt printer';
+            if (label) label.textContent = 'Printer';
         }
-        updatePlaceOrderState();
-    });
+    }
+
+    async function handlePrinterBtnClick() {
+        if (typeof BluetoothPrinter === 'undefined') {
+            showToast('Bluetooth printer script not loaded.', 'error');
+            return;
+        }
+        if (BluetoothPrinter.isConnected()) {
+            BluetoothPrinter.disconnect();
+            updatePrinterBtn(false);
+            showToast('Printer disconnected.', 'success');
+            return;
+        }
+        const btn = document.getElementById('printer-status-btn');
+        if (btn) btn.style.opacity = '0.5';
+        try {
+            await BluetoothPrinter.connect();
+            updatePrinterBtn(true);
+            showToast('Printer connected!', 'success');
+        } catch (err) {
+            showToast('Printer: ' + err.message, 'error');
+            updatePrinterBtn(false);
+        } finally {
+            if (btn) btn.style.opacity = '';
+        }
+    }
+
+    // Fetch receipt settings from the server
+    async function fetchReceiptSettings() {
+        try {
+            const res  = await fetch('modules/homepage/get_receipt_settings.php');
+            const data = await res.json();
+            return data.settings || {};
+        } catch {
+            return {};
+        }
+    }
+
+    // Auto-print after a successful order
+    async function autoPrint(orderPayload) {
+        if (typeof BluetoothPrinter === 'undefined') return;
+        if (!BluetoothPrinter.isConnected()) return;
+
+        try {
+            const settings = await fetchReceiptSettings();
+            await BluetoothPrinter.print(orderPayload, settings);
+            showToast('Receipt printed!', 'success');
+        } catch (err) {
+            console.error('[Print error]', err);
+            showToast('Print failed: ' + err.message, 'error');
+        }
     }
 
     // ── Place Order ────────────────────────────────────────────────────────
@@ -339,28 +419,23 @@
         if (placeOrderBtn.disabled) return;
 
         const { total, totalDiscount, subtotal } = calcTotals();
-        const beeper  = beeperInput.value.trim();
-        const isCash  = state.paymentMethod === 'cash';
-        const isGcash = state.paymentMethod === 'gcash';
-        const amount  = parseFloat(amountInput.value) || 0;
+        const beeper   = beeperInput.value.trim();
+        const isCash   = state.paymentMethod === 'cash';
+        const isGcash  = state.paymentMethod === 'gcash';
+        const amount   = parseFloat(amountInput.value) || 0;
         const gcashRef = gcashRefInput ? gcashRefInput.value.trim() : '';
 
-        // Validate beeper
         if (!beeper || parseInt(beeper) < 1) {
             beeperWrap.classList.add('beeper-error');
             beeperError.classList.add('visible');
             beeperInput.focus();
             return;
         }
-
-        // Validate cash
         if (isCash && (amount <= 0 || amount < total)) {
             showToast('Amount paid must be equal to or greater than the total.', 'error');
             amountInput.focus();
             return;
         }
-
-        // Validate gcash ref
         if (isGcash && !gcashRef) {
             if (gcashRefWrap)  gcashRefWrap.classList.add('beeper-error');
             if (gcashRefError) gcashRefError.classList.add('visible');
@@ -371,21 +446,20 @@
         const change = isCash ? (amount - total) : 0;
 
         const payload = {
-            beeper_number:    parseInt(beeper),
-            order_type:       state.orderType,
-            payment_method:   state.paymentMethod,
-            // For cash: actual amount paid. For gcash: total (exact).
-            amount_paid:      isCash ? amount : total,
-            gcash_reference:  isGcash ? gcashRef : '',
-            subtotal:         subtotal,
-            discount:         totalDiscount,
-            total:            total,
-            change_amount:    change,
-            items:            state.order.map(o => ({
+            beeper_number:   parseInt(beeper),
+            order_type:      state.orderType,
+            payment_method:  state.paymentMethod,
+            amount_paid:     isCash ? amount : total,
+            gcash_reference: isGcash ? gcashRef : '',
+            subtotal,
+            discount:        totalDiscount,
+            total,
+            change_amount:   change,
+            items:           state.order.map(o => ({
                 id:    o.id,
                 name:  o.name,
                 price: o.price,
-                qty:   o.qty
+                qty:   o.qty,
             }))
         };
 
@@ -407,6 +481,10 @@
             }
             if (data.success) {
                 showToast('Order has been placed!', 'success');
+
+                // ── AUTO PRINT ──────────────────────────────────────────
+                autoPrint(payload);
+                // ───────────────────────────────────────────────────────
 
                 // Reset state
                 state.order           = [];
@@ -457,5 +535,6 @@
     // ── Init ───────────────────────────────────────────────────────────────
     syncPaymentInputs();
     renderOrder();
+    injectPrinterStatusBtn();
 
 })();

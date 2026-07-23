@@ -116,11 +116,8 @@
     });
   }
 
-
   // ══════════════════════════════════════════════════════════════════════
-  //  EXCEL EXPORT
-  //  Fetch goes DIRECTLY to statistics_ajax.php — not through index.php
-  //  to avoid the include conflict that caused "Failed to generate report"
+  //  EXCEL EXPORT — with Merge All Branches toggle
   // ══════════════════════════════════════════════════════════════════════
   const AJAX_URL = "/Github/POS_SYSTEM/modules/statistics/statistics_ajax.php";
 
@@ -136,17 +133,13 @@
     const yearOptions = [2024,2025,2026,2027,2028].map((y) =>
       `<option value="${y}" ${y===currentYear?"selected":""}>${y}</option>`).join("");
 
-    // Month options as a <select size="4"> so it shows 4 and is scrollable
-    const monthOptions = mNames.map((n,i) =>
-      `<option value="${i+1}" ${(i+1)===currentMonth?"selected":""}>${n}</option>`).join("");
-
     const overlay = document.createElement("div");
     overlay.id = "excel-year-picker";
     overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:999999;display:flex;align-items:center;justify-content:center;padding:20px;`;
     overlay.addEventListener("click",(e)=>{ if(e.target===overlay) overlay.remove(); });
 
     overlay.innerHTML = `
-      <div style="background:#F4EFD7;border-radius:24px;padding:28px 32px;width:360px;
+      <div style="background:#F4EFD7;border-radius:24px;padding:28px 32px;width:380px;
         font-family:Poppins,sans-serif;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
         <h3 style="margin:0 0 6px;color:#1C3924;font-size:17px;">📊 Export Excel Report</h3>
         <p style="margin:0 0 20px;font-size:13px;color:#888;">Choose year and optionally filter by month</p>
@@ -159,10 +152,10 @@
 
         <label style="font-size:13px;font-weight:600;color:#1C3924;display:block;margin-bottom:6px;">
           Month
-          <span style="font-weight:400;color:#888;font-size:12px;">(optional — leave "All months" to export whole year)</span>
+          <span style="font-weight:400;color:#888;font-size:12px;">(optional)</span>
         </label>
 
-        <div id="ep-month-dropdown" style="position:relative;margin-bottom:22px;">
+        <div id="ep-month-dropdown" style="position:relative;margin-bottom:16px;">
           <button id="ep-month-btn" type="button" style="width:100%;padding:10px 14px;border-radius:12px;
             border:1.5px solid #DDD3AF;font-family:Poppins,sans-serif;font-size:13px;
             background:white;color:#1C3924;outline:none;cursor:pointer;text-align:left;
@@ -185,6 +178,25 @@
         </div>
         <input type="hidden" id="ep-month" value="${currentMonth}">
 
+        <!-- ── MERGE ALL BRANCHES TOGGLE ── -->
+        <div style="display:flex;align-items:center;justify-content:space-between;
+            padding:12px 14px;background:#fff;border:1.5px solid #DDD3AF;
+            border-radius:12px;margin-bottom:22px;">
+            <div>
+                <div style="font-size:13px;font-weight:600;color:#1C3924;">Merge all branches</div>
+                <div style="font-size:11.5px;color:#888;margin-top:2px;">Include data from all branch accounts</div>
+            </div>
+            <label style="position:relative;display:inline-block;width:34px;height:19px;flex-shrink:0;cursor:pointer;">
+                <input type="checkbox" id="ep-merge-toggle" style="opacity:0;width:0;height:0;">
+                <span id="ep-merge-slider" style="position:absolute;inset:0;background:#D0C9A8;
+                    border-radius:999px;transition:background 0.2s;">
+                    <span id="ep-merge-knob" style="position:absolute;width:13px;height:13px;
+                        left:3px;top:3px;background:#fff;border-radius:50%;
+                        transition:transform 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.1);display:block;"></span>
+                </span>
+            </label>
+        </div>
+
         <div style="display:flex;gap:10px;justify-content:flex-end;">
           <button onclick="document.getElementById('excel-year-picker').remove()"
             style="padding:10px 18px;border-radius:999px;border:1.5px solid #DDD3AF;
@@ -197,7 +209,7 @@
 
     document.body.appendChild(overlay);
 
-    // ── Custom month dropdown ────────────────────────────────────────────
+    // ── Month dropdown ──────────────────────────────────────────────────
     const monthBtn    = document.getElementById("ep-month-btn");
     const monthList   = document.getElementById("ep-month-list");
     const monthHidden = document.getElementById("ep-month");
@@ -221,8 +233,8 @@
         monthLbl.textContent = val === 0 ? "All months" : mNames[val - 1];
         monthList.querySelectorAll(".ep-month-opt").forEach((o) => {
           const isSelected = parseInt(o.dataset.value) === val;
-          o.style.background  = isSelected ? "#f5edcf" : "white";
-          o.style.fontWeight  = isSelected ? "600"     : "400";
+          o.style.background = isSelected ? "#f5edcf" : "white";
+          o.style.fontWeight = isSelected ? "600"     : "400";
         });
         monthList.style.display = "none";
         monthBtn.querySelector("span:last-child").textContent = "▼";
@@ -236,27 +248,35 @@
         document.removeEventListener("click", closeMD);
       }
     });
-    // ────────────────────────────────────────────────────────────────────
 
+    // ── Merge toggle visual ─────────────────────────────────────────────
+    const mergeToggle = document.getElementById("ep-merge-toggle");
+    const mergeSlider = document.getElementById("ep-merge-slider");
+    const mergeKnob   = document.getElementById("ep-merge-knob");
+    if (mergeToggle) {
+      mergeToggle.addEventListener("change", () => {
+        const on = mergeToggle.checked;
+        mergeSlider.style.background = on ? "#1C3924" : "#D0C9A8";
+        mergeKnob.style.transform    = on ? "translateX(15px)" : "";
+      });
+    }
+
+    // ── Download button ─────────────────────────────────────────────────
     document.getElementById("ep-download-btn").addEventListener("click", () => {
       const year  = parseInt(document.getElementById("ep-year").value);
-      const month = parseInt(document.getElementById("ep-month").value); // 0 = all
+      const month = parseInt(document.getElementById("ep-month").value);
+      const merge = mergeToggle?.checked ? 1 : 0;
       const btn   = document.getElementById("ep-download-btn");
       btn.disabled = true; btn.textContent = "Preparing...";
 
-      // ── Fetch DIRECTLY to statistics_ajax.php ─────────────────────────
-      fetch(`${AJAX_URL}?excel_report=1&year=${year}&month=${month}&filter_month=${month}`, {
+      fetch(`${AJAX_URL}?excel_report=1&year=${year}&month=${month}&filter_month=${month}&merge=${merge}`, {
         headers: { "X-Requested-With": "XMLHttpRequest" },
       })
       .then((r) => {
-        // Always read as text first so we can show the raw PHP error if JSON parse fails
         return r.text().then((text) => {
           if (!r.ok) throw new Error(`HTTP ${r.status}: ${text.substring(0, 200)}`);
-          try {
-            return JSON.parse(text);
-          } catch (e) {
-            throw new Error("Server returned non-JSON: " + text.substring(0, 300));
-          }
+          try { return JSON.parse(text); }
+          catch (e) { throw new Error("Server returned non-JSON: " + text.substring(0, 300)); }
         });
       })
       .then((data) => {
@@ -272,10 +292,9 @@
     });
   };
 
-  // ── Format date string: "2026-05-02" → "May 2, 2026" ─────────────────
+  // ── Format date string ─────────────────────────────────────────────────
   function formatDate(dateStr) {
     if (!dateStr || dateStr === "—") return "—";
-    // Handle both "YYYY-MM-DD" and "May 2, 2026 g:i A" formats
     const d = new Date(dateStr.includes("-") && dateStr.length <= 10
       ? dateStr + "T00:00:00"
       : dateStr);
@@ -286,19 +305,21 @@
   function ucfirst(str) { return str ? str.charAt(0).toUpperCase()+str.slice(1) : ""; }
   function fmtMoney(val) {
     return parseFloat(val||0).toLocaleString('en-PH', {minimumFractionDigits:0, maximumFractionDigits:2});
-}
+  }
 
   // ── Build Excel workbook ───────────────────────────────────────────────
   function buildAllSheetsExcel(data, year, filterMonth) {
     const wb    = XLSX.utils.book_new();
     const mFull = ["January","February","March","April","May","June",
                    "July","August","September","October","November","December"];
-    const dailyMonth = data.daily_month || data.month || new Date().getMonth()+1;
+    // NOTE: dailyMonth can legitimately be 0 ("All Months"), so we must check
+    // for undefined/null explicitly instead of using `||`, which treats 0 as falsy
+    // and used to silently fall back to the real current month.
+    const dailyMonth = (data.daily_month !== undefined && data.daily_month !== null)
+      ? data.daily_month
+      : (data.month !== undefined && data.month !== null ? data.month : new Date().getMonth() + 1);
 
-    // ── makeSheet ──────────────────────────────────────────────────────
     function makeSheet(titleText, headers, rows, colWidths, statusColIdx) {
-      // Wrap every string value as an explicit text cell so xlsx-js-style
-      // never auto-coerces date-like strings ("May 2, 2026") into serials.
       function safeCell(v) {
         if (v === null || v === undefined || v === "") return { v: "", t: "s" };
         if (typeof v === "number") return { v, t: "n" };
@@ -351,82 +372,112 @@
       return ws;
     }
 
+    const isMerged    = data.merged || false;
     const filterLabel = filterMonth>0 ? ` — ${mFull[filterMonth-1]} ${year}` : ` — ${year}`;
+    const mergeLabel  = isMerged ? " [All Branches]" : "";
 
-    // ── SHEET 1: ORDERS ───────────────────────────────────────────────
-    const orderHeaders = [
-      "Order ID","Beeper #","Items","Order Type","Payment",
-      "GCash Ref #","Extra GCash Ref #","Extra GCash Amt",
-      "Subtotal","Discount","Refund","Total","Change",
-      "Status","Date Ordered","Date Served"
-    ];
-    const orderRows = (data.orders||[]).map((o)=>[
-      o.id,
-      o.beeper_number,
-      o.items_str||"",
-      o.order_type==="dine-in"?"Dine In":"Take Out",
-      ucfirst(o.payment_method),
-      o.gcash_reference        || "—",
-      o.gcash_reference_extra  || "—",
-      fmtMoney(o.gcash_extra_amount||0),
-      fmtMoney(o.subtotal||0),
-      fmtMoney(o.discount||0),
-      fmtMoney(o.refund_amount||0),
-      fmtMoney(o.total||0),
-      fmtMoney(o.change_amount||0),
-      ucfirst(o.status),
-      // ── Both dates as plain readable strings ───────────────────────
-      o.created_at ? formatDate(o.created_at.split(" ")[0]) : "—",
-      o.served_at  ? formatDate(o.served_at.split(" ")[0])  : "—",
-    ]);
+    // ── SHEET 1: ORDERS (merged includes Branch column) ─────────────────
+    const orderHeaders = isMerged
+      ? ["Branch","Order ID","Beeper #","Items","Order Type","Payment",
+         "GCash Ref #","Extra GCash Ref #","Extra GCash Amt",
+         "Subtotal","Discount","Refund","Total","Change",
+         "Status","Date Ordered","Date Served"]
+      : ["Order ID","Beeper #","Items","Order Type","Payment",
+         "GCash Ref #","Extra GCash Ref #","Extra GCash Amt",
+         "Subtotal","Discount","Refund","Total","Change",
+         "Status","Date Ordered","Date Served"];
+
+    const orderRows = (data.orders||[]).map((o)=>{
+      const base = [
+        o.id, o.beeper_number, o.items_str||"",
+        o.order_type==="dine-in"?"Dine In":"Take Out",
+        ucfirst(o.payment_method),
+        o.gcash_reference        || "—",
+        o.gcash_reference_extra  || "—",
+        fmtMoney(o.gcash_extra_amount||0),
+        fmtMoney(o.subtotal||0),
+        fmtMoney(o.discount||0),
+        fmtMoney(o.refund_amount||0),
+        fmtMoney(o.total||0),
+        fmtMoney(o.change_amount||0),
+        ucfirst(o.status),
+        o.created_at ? formatDate(o.created_at.split(" ")[0]) : "—",
+        o.served_at  ? formatDate(o.served_at.split(" ")[0])  : "—",
+      ];
+      return isMerged ? [o.branch_name || "—", ...base] : base;
+    });
+
+    const orderColWidths = isMerged
+      ? [20,10,10,40,12,12,20,20,14,12,12,12,12,12,12,22,22]
+      : [10,10,40,12,12,20,20,14,12,12,12,12,12,12,22,22];
+
     const ws1 = makeSheet(
-      `TWIST & ROLL POS — Orders${filterLabel}`,
-      orderHeaders, orderRows,
-      [10,10,40,12,12,20,20,14,12,12,12,12,12,12,22,22],
-      13
+      `TWIST & ROLL POS — Orders${filterLabel}${mergeLabel}`,
+      orderHeaders, orderRows, orderColWidths, isMerged ? 14 : 13
     );
-    ws1["!autofilter"] = { ref: "O3:O3" };
     XLSX.utils.book_append_sheet(wb, ws1, "Orders");
 
+    // ── PER-BRANCH SHEETS (merge mode only) ───────────────────────────
+    if (isMerged && data.branches_data && data.branches_data.length > 0) {
+      const branchOnlyHeaders = [
+        "Order ID","Beeper #","Items","Order Type","Payment",
+        "GCash Ref #","Subtotal","Discount","Total","Status","Date Ordered","Date Served"
+      ];
+      data.branches_data.forEach((branch) => {
+        const bRows = (branch.orders||[]).map((o)=>[
+          o.id, o.beeper_number, o.items_str||"",
+          o.order_type==="dine-in"?"Dine In":"Take Out",
+          ucfirst(o.payment_method),
+          o.gcash_reference || "—",
+          fmtMoney(o.subtotal||0),
+          fmtMoney(o.discount||0),
+          fmtMoney(o.total||0),
+          ucfirst(o.status),
+          o.created_at ? formatDate(o.created_at.split(" ")[0]) : "—",
+          o.served_at  ? formatDate(o.served_at.split(" ")[0])  : "—",
+        ]);
+        // Sheet name max 31 chars
+        const sheetName = branch.branch_name.substring(0, 31);
+        const bws = makeSheet(
+          `${branch.branch_name} — Orders${filterLabel}`,
+          branchOnlyHeaders, bRows,
+          [10,10,40,12,12,20,12,12,12,12,22,22], 9
+        );
+        XLSX.utils.book_append_sheet(wb, bws, sheetName);
+      });
+    }
+
     // ── SHEET 2: DAILY SUMMARY ────────────────────────────────────────
-    const dailyHeaders = ["Date","Total Orders","Served","Voided",
-  "Total Sales (₱)","Total Discounts (₱)"];
+    const dailyHeaders = ["Date","Total Orders","Served","Voided","Total Sales (₱)","Total Discounts (₱)"];
     const dailyRows = (data.daily||[]).map((d)=>[
       formatDate(d.d),
-      parseInt(d.total_orders||0),
-      parseInt(d.served||0),
-      parseInt(d.voided||0),
-      fmtMoney(d.total_sales||0),
-      fmtMoney(d.total_discounts||0),
+      parseInt(d.total_orders||0), parseInt(d.served||0), parseInt(d.voided||0),
+      fmtMoney(d.total_sales||0), fmtMoney(d.total_discounts||0),
     ]);
+    const dailySummaryLabel = dailyMonth > 0
+      ? `${mFull[dailyMonth-1]} ${year}`
+      : `All Months ${year}`;
     const ws2 = makeSheet(
-      `TWIST & ROLL POS — Daily Summary — ${mFull[dailyMonth-1]} ${year}`,
-      dailyHeaders, dailyRows,
-      [22,14,10,10,18,20], null
+      `TWIST & ROLL POS — Daily Summary — ${dailySummaryLabel}${mergeLabel}`,
+      dailyHeaders, dailyRows, [22,14,10,10,18,20], null
     );
     XLSX.utils.book_append_sheet(wb, ws2, "Daily Summary");
 
     // ── SHEET 3: WEEKLY ───────────────────────────────────────────────
-    const weeklyHeaders = ["Week #","Week Start","Week End","Total Orders",
-  "Served","Voided","Total Sales (₱)","Total Discounts (₱)"];
+    const weeklyHeaders = ["Week #","Week Start","Week End","Total Orders","Served","Voided","Total Sales (₱)","Total Discounts (₱)"];
     const weeklyRows = (data.weekly||[]).map((w,i)=>[
-      i+1,
-      formatDate(w.week_start),
-      formatDate(w.week_end),
-      parseInt(w.total_orders||0), parseInt(w.served||0),
-      parseInt(w.voided||0),
+      i+1, formatDate(w.week_start), formatDate(w.week_end),
+      parseInt(w.total_orders||0), parseInt(w.served||0), parseInt(w.voided||0),
       fmtMoney(w.total_sales||0), fmtMoney(w.total_discounts||0),
     ]);
     const ws3 = makeSheet(
-      `TWIST & ROLL POS — Weekly Summary${filterLabel}`,
-      weeklyHeaders, weeklyRows,
-      [8,22,22,14,10,10,18,20], null
+      `TWIST & ROLL POS — Weekly Summary${filterLabel}${mergeLabel}`,
+      weeklyHeaders, weeklyRows, [8,22,22,14,10,10,18,20], null
     );
     XLSX.utils.book_append_sheet(wb, ws3, "Weekly Summary");
 
-    // ── SHEET 4: MONTHLY (all 12, zeros for empty) ────────────────────
-    const monthlyHeaders = ["Month","Total Orders","Served","Voided",
-      "Total Sales (₱)","Total Discounts (₱)","Avg Order (₱)"];
+    // ── SHEET 4: MONTHLY ──────────────────────────────────────────────
+    const monthlyHeaders = ["Month","Total Orders","Served","Voided","Total Sales (₱)","Total Discounts (₱)","Avg Order (₱)"];
     const byMo = {};
     (data.monthly||[]).forEach((m)=>{ byMo[parseInt(m.mo)]=m; });
     const monthlyFull = [];
@@ -434,44 +485,39 @@
       const m=byMo[mo];
       monthlyFull.push(m
         ? [mFull[mo-1],parseInt(m.total_orders||0),parseInt(m.served||0),
-           parseInt(m.voided||0),
-           fmtMoney(m.total_sales||0),fmtMoney(m.total_discounts||0),fmtMoney(m.avg_order||0)]
+           parseInt(m.voided||0),fmtMoney(m.total_sales||0),fmtMoney(m.total_discounts||0),fmtMoney(m.avg_order||0)]
         : [mFull[mo-1],0,0,0,'0','0','0']
       );
     }
     const ws4 = makeSheet(
-      `TWIST & ROLL POS — Monthly Summary — ${year}`,
-      monthlyHeaders, monthlyFull,
-      [14,14,10,10,18,20,16], null
+      `TWIST & ROLL POS — Monthly Summary — ${year}${mergeLabel}`,
+      monthlyHeaders, monthlyFull, [14,14,10,10,18,20,16], null
     );
     XLSX.utils.book_append_sheet(wb, ws4, "Monthly Summary");
 
     // ── SHEET 5: ANNUAL ───────────────────────────────────────────────
-    const annualHeaders = ["Year","Total Orders","Served","Voided",
-      "Total Sales (₱)","Total Discounts (₱)"];
+    const annualHeaders = ["Year","Total Orders","Served","Voided","Total Sales (₱)","Total Discounts (₱)"];
     const annualRows = (data.annual||[]).map((a)=>[
-      a.yr,parseInt(a.total_orders||0),parseInt(a.served||0),
-      parseInt(a.voided||0),
-      fmtMoney(a.total_sales||0),fmtMoney(a.total_discounts||0),
+      a.yr, parseInt(a.total_orders||0), parseInt(a.served||0),
+      parseInt(a.voided||0), fmtMoney(a.total_sales||0), fmtMoney(a.total_discounts||0),
     ]);
     const ws5 = makeSheet(
-      `TWIST & ROLL POS — Annual Summary`,
-      annualHeaders, annualRows,
-      [10,14,10,10,18,20], null
+      `TWIST & ROLL POS — Annual Summary${mergeLabel}`,
+      annualHeaders, annualRows, [10,14,10,10,18,20], null
     );
     XLSX.utils.book_append_sheet(wb, ws5, "Annual Summary");
 
     // ── SHEET 6: TOP ITEMS ────────────────────────────────────────────
     const topHeaders = ["Rank","Item Name","Total Qty Sold","Total Revenue (₱)"];
     const topRows = (data.top_items||[]).map((item,i)=>[
-      i+1, item.name,
-      parseInt(item.total_qty||0),
-      fmtMoney(item.total_revenue||0),
+      i+1, item.name, parseInt(item.total_qty||0), fmtMoney(item.total_revenue||0),
     ]);
+    const topItemsLabel = dailyMonth > 0
+      ? `${mFull[dailyMonth-1]} ${year}`
+      : `All Months ${year}`;
     const ws6 = makeSheet(
-      `TWIST & ROLL POS — Top Items — ${mFull[dailyMonth-1]} ${year}`,
-      topHeaders, topRows,
-      [8,30,16,20], null
+      `TWIST & ROLL POS — Top Items — ${topItemsLabel}${mergeLabel}`,
+      topHeaders, topRows, [8,30,16,20], null
     );
     XLSX.utils.book_append_sheet(wb, ws6, "Top Items");
 
@@ -479,7 +525,8 @@
     const d=new Date();
     const ds=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
     const monthSuffix=filterMonth>0?`_${mFull[filterMonth-1]}`:"";
-    XLSX.writeFile(wb, `TwistandRoll_Report_${year}${monthSuffix}_${ds}.xlsx`);
+    const mergeSuffix=isMerged?"_AllBranches":"";
+    XLSX.writeFile(wb, `TwistandRoll_Report_${year}${monthSuffix}${mergeSuffix}_${ds}.xlsx`);
   }
 
   // ── FILTER ─────────────────────────────────────────────────────────────
@@ -489,10 +536,9 @@
   function activateChip(c)   { c.style.background=GOLD; c.style.color="#fff"; c.style.borderColor=GOLD; }
   function deactivateChip(c) { c.style.background="#F8F4E4"; c.style.color=GOLD; c.style.borderColor=CHIP_BORDER; }
 
-window.filterTable = function () {
+  window.filterTable = function () {
     if (document.getElementById("filter-modal-overlay")) return;
 
-    // Check current section from URL
     const _urlParams  = new URLSearchParams(window.location.search);
     const _curSection = (_urlParams.get('section') || '').toLowerCase();
     const _showStatus = (_curSection === 'orders' || _curSection === '');
@@ -507,7 +553,6 @@ window.filterTable = function () {
         <div style="padding:20px 26px 14px;font-size:18px;font-weight:700;color:${GREEN};">Filter</div>
         <div style="height:1px;background:#D9D2B8;"></div>
         <div style="padding:24px 32px 22px;display:flex;flex-direction:column;gap:20px;">
-
           <div style="display:flex;align-items:center;gap:16px;">
             <div style="font-size:14px;font-weight:600;color:${GREEN};width:140px;">Date</div>
             <div style="flex:1;display:flex;align-items:center;gap:8px;">
@@ -518,7 +563,6 @@ window.filterTable = function () {
                 style="flex:1;height:38px;border-radius:10px;border:1.5px solid ${CHIP_BORDER};padding:0 10px;font-family:Poppins,sans-serif;background:white;color:${GREEN};">
             </div>
           </div>
-
           <div style="display:flex;align-items:center;gap:16px;">
             <div style="font-size:14px;font-weight:600;color:${GREEN};width:140px;">Order type</div>
             <div style="display:flex;gap:8px;">
@@ -527,7 +571,6 @@ window.filterTable = function () {
               <button class="filter-chip" data-group="order-type" data-value="take out">Take out</button>
             </div>
           </div>
-
           <div style="display:flex;align-items:center;gap:16px;">
             <div style="font-size:14px;font-weight:600;color:${GREEN};width:140px;">Payment</div>
             <div style="display:flex;gap:8px;">
@@ -536,7 +579,6 @@ window.filterTable = function () {
               <button class="filter-chip" data-group="payment" data-value="gcash">GCash</button>
             </div>
           </div>
-
           ${_showStatus ? `
           <div style="display:flex;align-items:center;gap:16px;">
             <div style="font-size:14px;font-weight:600;color:${GREEN};width:140px;">Status</div>
@@ -547,7 +589,6 @@ window.filterTable = function () {
               <button class="filter-chip" data-group="status" data-value="voided">Voided</button>
             </div>
           </div>` : ''}
-
           <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:4px;">
             <button onclick="clearFilter()"
               style="height:40px;padding:0 16px;border-radius:999px;border:1.5px solid ${CHIP_BORDER};background:#F8F4E4;color:${GREEN};font-weight:600;cursor:pointer;font-family:Poppins,sans-serif;">↺ Reset</button>

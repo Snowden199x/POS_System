@@ -34,6 +34,29 @@
     --radius-pill:  999px;
 }
 
+/* ── Dark mode — same brand palette (green/gold accents unchanged),
+   surfaces and text inverted for a dark, aesthetic look.
+   Toggled via data-theme="dark" on <html> (see Profile → Receipt Settings). */
+:root[data-theme="dark"] {
+    --green-100:    #4FA06A;
+    --green-5:      rgba(79,160,106,0.08);
+    --cream:        #1B2A22;
+    --gold-100:     #E3CC82;
+    --gold-20:      rgba(227,204,130,0.16);
+    --white:        #FFFFFF;
+    --border:       #2E4033;
+    --border-dark:  #3A4F40;
+    --text-primary: #EDF3ED;
+    --text-muted:   #A9BBAD;
+    --text-light:   #7C8F80;
+    --panel-bg:     #182720;
+    --cream-card:   #223327;
+    --red:          #E0604C;
+    --shadow-sm:    0 1px 4px rgba(0,0,0,0.25);
+    --shadow-md:    0 4px 16px rgba(0,0,0,0.32);
+    --shadow-lg:    0 8px 32px rgba(0,0,0,0.4);
+}
+
 html, body {
     height: 100%;
 }
@@ -876,6 +899,122 @@ body {
 @keyframes toastIn {
     from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════════════
+   PRINTER STATUS BUTTON
+   Append to bottom of homepage.css
+   ══════════════════════════════════════════════ */
+
+.printer-status-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--border-dark);
+    background: transparent;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+}
+
+/* Disconnected state — grey/neutral */
+.printer-status-btn--disconnected {
+    color: var(--text-muted);
+    border-color: var(--border-dark);
+}
+
+.printer-status-btn--disconnected:hover {
+    border-color: var(--green-100);
+    color: var(--green-100);
+    background: var(--green-5);
+}
+
+/* Connected state — green */
+.printer-status-btn--connected {
+    color: #fff;
+    background: var(--green-100);
+    border-color: var(--green-100);
+}
+
+.printer-status-btn--connected:hover {
+    background: #152c1c;
+    border-color: #152c1c;
+}
+
+/* Pulse dot shown when connected */
+.printer-status-btn--connected::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4cff88;
+    animation: printerPulse 1.5s ease-in-out infinite;
+    flex-shrink: 0;
+}
+
+@keyframes printerPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.5; transform: scale(0.8); }
+}
+
+.branch-badge {
+    display: flex;
+    align-items: center;
+    padding: 5px 14px;
+    border-radius: 999px;
+    background: var(--gold-20);
+    border: 1.5px solid var(--gold-100);
+    color: var(--green-100);
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+ 
+@media (max-width: 700px) {
+    .branch-badge { display: none; }
+}
+
+/* ══════════════════════════════════════════════
+   BRANCH BADGE — append to bottom of homepage.css
+   Sits beside the logo in the navbar
+   ══════════════════════════════════════════════ */
+
+.navbar__logo-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+}
+
+.branch-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--gold-20);
+    border: 1.5px solid var(--gold-100);
+    color: var(--green-100);
+    font-family: 'Poppins', sans-serif;
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 860px) {
+    .branch-badge { display: none; }
 }
 
 /* =============================================

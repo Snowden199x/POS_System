@@ -9,8 +9,15 @@ $current_page = 'statistics';
 
 require_once __DIR__ . '/../../db/connection.php';
 
-$stmt_user = $pdo->prepare("SELECT avatar FROM users WHERE id = 1");
-$stmt_user->execute();
+// ── Branch filter ─────────────────────────────────────────────────────────
+$branch_id   = $_SESSION['user_id']     ?? 1;
+$branch_name = $_SESSION['branch_name'] ?? 'Main Branch';
+$BRANCH      = "AND o.branch_id = {$branch_id}";
+$BRANCH_ONLY = "AND branch_id = {$branch_id}";
+
+
+$stmt_user = $pdo->prepare("SELECT avatar FROM users WHERE id = ?");
+$stmt_user->execute([$branch_id]);
 $nav_user = $stmt_user->fetch(PDO::FETCH_ASSOC);
 
 $selected_year    = isset($_GET['year'])    ? (int)$_GET['year']    : (int)date('Y');
@@ -28,21 +35,60 @@ $months_list = [
 ];
 $year_range = range(2026, 2036);
 
+// ══════════════════════════════════════════════════════════════════════════
+//  BUSINESS DAY LOGIC
+//  Business day runs 5:00 PM – 2:00 AM (next calendar day)
+//  SQL:  DATE(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 17 HOUR)
+//  Maps  17:00 PHT → 00:00 (same date)  ✓
+//        01:59 PHT → day-1 08:59        ✓  (still previous business day)
+//        02:00 PHT → day   09:00        ✓  (new business day starts)
+// ══════════════════════════════════════════════════════════════════════════
+date_default_timezone_set('Asia/Manila');
+
+$BIZ_DATE  = "DATE(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 17 HOUR)";
+$BIZ_YEAR  = "YEAR(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 17 HOUR)";
+$BIZ_MONTH = "MONTH(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 17 HOUR)";
+// ── Branch SQL helpers ────────────────────────────────────────────────────
+// Current business date on PHP side
+$now_pht = new DateTime('now', new DateTimeZone('Asia/Manila'));
+if ((int)$now_pht->format('H') < 2) {
+    // Before 2 AM — still the previous business day
+    $now_pht->modify('-1 day');
+}
+$today = $now_pht->format('Y-m-d');
+
 // ── DASHBOARD DATA ─────────────────────────────────────────────────────────
-$today      = date('Y-m-d');
-$today_stmt = $pdo->prepare("SELECT COUNT(*) as c, COALESCE(SUM(total),0) as s FROM orders WHERE DATE(created_at)=? AND status IN ('pending','served')");
+$today_stmt = $pdo->prepare("
+    SELECT COUNT(*) as c, COALESCE(SUM(total),0) as s
+    FROM orders
+    WHERE $BIZ_DATE = ? AND status IN ('pending','served') $BRANCH_ONLY
+");
 $today_stmt->execute([$today]);
 $today_data = $today_stmt->fetch();
 
-$monthly_stmt = $pdo->prepare("SELECT COALESCE(SUM(total),0) as total_sales, COUNT(*) as total_orders FROM orders WHERE YEAR(created_at)=? AND MONTH(created_at)=? AND status IN ('pending','served')");
+$monthly_stmt = $pdo->prepare("
+    SELECT COALESCE(SUM(total),0) as total_sales, COUNT(*) as total_orders
+    FROM orders
+    WHERE $BIZ_YEAR=? AND $BIZ_MONTH=? AND status IN ('pending','served') $BRANCH_ONLY
+");
 $monthly_stmt->execute([$selected_year, $selected_month]);
 $monthly = $monthly_stmt->fetch();
 
-$best_stmt = $pdo->prepare("SELECT oi.name, oi.menu_item_id, SUM(oi.quantity) as total_qty FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE YEAR(o.created_at)=? AND MONTH(o.created_at)=? AND o.status IN ('pending','served') GROUP BY oi.name,oi.menu_item_id ORDER BY total_qty DESC LIMIT 3");
+$best_stmt = $pdo->prepare("
+    SELECT oi.name, oi.menu_item_id, SUM(oi.quantity) as total_qty
+    FROM order_items oi JOIN orders o ON o.id=oi.order_id
+    WHERE $BIZ_YEAR=? AND $BIZ_MONTH=? AND o.status IN ('pending','served') $BRANCH
+    GROUP BY oi.name,oi.menu_item_id ORDER BY total_qty DESC LIMIT 3
+");
 $best_stmt->execute([$selected_year, $selected_month]);
 $best_items = $best_stmt->fetchAll();
 
-$least_stmt = $pdo->prepare("SELECT oi.name, oi.menu_item_id, SUM(oi.quantity) as total_qty FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE YEAR(o.created_at)=? AND MONTH(o.created_at)=? AND o.status IN ('pending','served') GROUP BY oi.name,oi.menu_item_id ORDER BY total_qty ASC LIMIT 3");
+$least_stmt = $pdo->prepare("
+    SELECT oi.name, oi.menu_item_id, SUM(oi.quantity) as total_qty
+    FROM order_items oi JOIN orders o ON o.id=oi.order_id
+    WHERE $BIZ_YEAR=? AND $BIZ_MONTH=? AND o.status IN ('pending','served') $BRANCH
+    GROUP BY oi.name,oi.menu_item_id ORDER BY total_qty ASC LIMIT 3
+");
 $least_stmt->execute([$selected_year, $selected_month]);
 $least_items = $least_stmt->fetchAll();
 
@@ -51,40 +97,76 @@ $img_map  = [];
 foreach ($img_stmt->fetchAll() as $row) $img_map[$row['id']] = $row['image'];
 
 // Sales per Day chart data (chart_year / chart_month)
-$daily_stmt = $pdo->prepare("SELECT DATE(created_at) as sale_date, COUNT(*) as order_count, COALESCE(SUM(total),0) as total_sales FROM orders WHERE YEAR(created_at)=? AND MONTH(created_at)=? AND status IN ('pending','served') GROUP BY DATE(created_at) ORDER BY sale_date ASC");
+$daily_stmt = $pdo->prepare("
+    SELECT
+        $BIZ_DATE as sale_date,
+        COUNT(*) as order_count,
+        COALESCE(SUM(total),0) as total_sales
+    FROM orders
+    WHERE $BIZ_YEAR=? AND $BIZ_MONTH=? AND status IN ('pending','served') $BRANCH_ONLY
+    GROUP BY $BIZ_DATE ORDER BY sale_date ASC
+");
 $daily_stmt->execute([$chart_year, $chart_month]);
 $daily_data = $daily_stmt->fetchAll();
 
-$weekly_stmt = $pdo->prepare("SELECT YEARWEEK(created_at,1) as yw, MIN(DATE(created_at)) as week_start, MAX(DATE(created_at)) as week_end, COALESCE(SUM(total),0) as total_sales, COUNT(*) as order_count FROM orders WHERE status IN ('pending','served') GROUP BY YEARWEEK(created_at,1) ORDER BY yw DESC LIMIT 5");
+$weekly_stmt = $pdo->prepare("
+    SELECT
+        YEARWEEK(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 17 HOUR, 1) as yw,
+        MIN($BIZ_DATE) as week_start,
+        MAX($BIZ_DATE) as week_end,
+        COALESCE(SUM(total),0) as total_sales,
+        COUNT(*) as order_count
+    FROM orders
+    WHERE status IN ('pending','served') $BRANCH_ONLY
+    GROUP BY YEARWEEK(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 17 HOUR, 1)
+    ORDER BY yw DESC LIMIT 5
+");
 $weekly_stmt->execute();
 $weekly_raw = array_reverse($weekly_stmt->fetchAll());
 
-$monthly_trend_stmt = $pdo->prepare("SELECT MONTH(created_at) as mo, COALESCE(SUM(total),0) as total_sales, COUNT(*) as order_count FROM orders WHERE YEAR(created_at)=? AND status IN ('pending','served') GROUP BY MONTH(created_at) ORDER BY mo ASC");
+$monthly_trend_stmt = $pdo->prepare("
+    SELECT
+        $BIZ_MONTH as mo,
+        COALESCE(SUM(total),0) as total_sales,
+        COUNT(*) as order_count
+    FROM orders
+    WHERE $BIZ_YEAR=? AND status IN ('pending','served') $BRANCH_ONLY
+    GROUP BY $BIZ_MONTH ORDER BY mo ASC
+");
 $monthly_trend_stmt->execute([$selected_year]);
 $monthly_trend = $monthly_trend_stmt->fetchAll();
 
 // ── SIDEBAR DATA ──────────────────────────────────────────────────────────
 $annual_stmt = $pdo->prepare("
-    SELECT 
-        MONTH(created_at) as mo,
+    SELECT
+        $BIZ_MONTH as mo,
         COALESCE(SUM(CASE WHEN status='served' THEN total ELSE 0 END),0) as total,
         COUNT(CASE WHEN status IN ('pending','served','voided') THEN 1 END) as orders,
         COUNT(CASE WHEN status='served' THEN 1 END) as served
-    FROM orders 
-    WHERE YEAR(created_at)=? 
-    AND status IN ('pending','served','voided')
-    GROUP BY MONTH(created_at) 
+    FROM orders
+    WHERE $BIZ_YEAR=?
+    AND status IN ('pending','served','voided') $BRANCH_ONLY
+    GROUP BY $BIZ_MONTH
     ORDER BY mo
 ");
 $annual_stmt->execute([$selected_year]);
 $annual_by_month = [];
 foreach ($annual_stmt->fetchAll() as $r) $annual_by_month[$r['mo']] = $r;
 
-$annual_total_stmt = $pdo->prepare("SELECT COALESCE(SUM(total),0) FROM orders WHERE YEAR(created_at)=? AND status = 'served'");
+$annual_total_stmt = $pdo->prepare("
+    SELECT COALESCE(SUM(total),0)
+    FROM orders
+    WHERE $BIZ_YEAR=? AND status = 'served' $BRANCH_ONLY
+");
 $annual_total_stmt->execute([$selected_year]);
 $annual_total = $annual_total_stmt->fetchColumn();
 
-$voids_stmt = $pdo->prepare("SELECT MONTH(created_at) as mo, COUNT(*) as cnt FROM orders WHERE YEAR(created_at)=? AND status='voided' GROUP BY MONTH(created_at)");
+$voids_stmt = $pdo->prepare("
+    SELECT $BIZ_MONTH as mo, COUNT(*) as cnt
+    FROM orders
+    WHERE $BIZ_YEAR=? AND status='voided' $BRANCH_ONLY
+    GROUP BY $BIZ_MONTH
+");
 $voids_stmt->execute([$selected_year]);
 $voids_by_month = [];
 foreach ($voids_stmt->fetchAll() as $r) $voids_by_month[$r['mo']] = $r['cnt'];
@@ -112,7 +194,8 @@ if ($sidebar_open && $selected_section) {
                GROUP_CONCAT(CONCAT(oi.quantity,'x ',oi.name,'|',oi.price) SEPARATOR ';;') AS items_data
         FROM orders o
         LEFT JOIN order_items oi ON oi.order_id = o.id
-        WHERE YEAR(o.created_at)=? AND MONTH(o.created_at)=?
+        WHERE {$BIZ_YEAR}=? AND {$BIZ_MONTH}=?
+          AND o.branch_id = $branch_id
           AND o.status IN ($status_filter)
         GROUP BY o.id
         ORDER BY $order_by
@@ -120,17 +203,37 @@ if ($sidebar_open && $selected_section) {
     $sec_stmt->execute([$selected_year, $selected_month]);
     $section_orders = $sec_stmt->fetchAll();
 
-    $sec_stats_stmt = $pdo->prepare("SELECT COUNT(*) as total, MAX(total) as highest, MIN(total) as lowest, COALESCE(SUM(total),0) as sum FROM orders WHERE YEAR(created_at)=? AND MONTH(created_at)=? AND status IN ($status_filter)");
+    $sec_stats_stmt = $pdo->prepare("
+        SELECT COUNT(*) as total, MAX(total) as highest, MIN(total) as lowest,
+               COALESCE(SUM(total),0) as sum
+        FROM orders
+        WHERE {$BIZ_YEAR}=? AND {$BIZ_MONTH}=? AND branch_id = $branch_id AND status IN ($status_filter)
+    ");
     $sec_stats_stmt->execute([$selected_year, $selected_month]);
     $section_stats = $sec_stats_stmt->fetch();
 
-    $high_stmt = $pdo->prepare("SELECT DATE(created_at) FROM orders WHERE YEAR(created_at)=? AND MONTH(created_at)=? AND status IN ($status_filter) ORDER BY total DESC LIMIT 1");
-    $high_stmt->execute([$selected_year, $selected_month]); $high_date = $high_stmt->fetchColumn();
+    $high_stmt = $pdo->prepare("
+        SELECT $BIZ_DATE FROM orders
+        WHERE {$BIZ_YEAR}=? AND {$BIZ_MONTH}=? AND branch_id = $branch_id AND status IN ($status_filter)
+        ORDER BY total DESC LIMIT 1
+    ");
+    $high_stmt->execute([$selected_year, $selected_month]);
+    $high_date = $high_stmt->fetchColumn();
 
-    $low_stmt = $pdo->prepare("SELECT DATE(created_at) FROM orders WHERE YEAR(created_at)=? AND MONTH(created_at)=? AND status IN ($status_filter) ORDER BY total ASC LIMIT 1");
-    $low_stmt->execute([$selected_year, $selected_month]); $low_date = $low_stmt->fetchColumn();
+    $low_stmt = $pdo->prepare("
+        SELECT $BIZ_DATE FROM orders
+        WHERE {$BIZ_YEAR}=? AND {$BIZ_MONTH}=? AND branch_id = $branch_id AND status IN ($status_filter)
+        ORDER BY total ASC LIMIT 1
+    ");
+    $low_stmt->execute([$selected_year, $selected_month]);
+    $low_date = $low_stmt->fetchColumn();
 
-    $bar_stmt = $pdo->prepare("SELECT DATE(created_at) as d, COUNT(*) as cnt FROM orders WHERE YEAR(created_at)=? AND MONTH(created_at)=? AND status IN ($status_filter) GROUP BY DATE(created_at) ORDER BY d");
+    $bar_stmt = $pdo->prepare("
+        SELECT $BIZ_DATE as d, COUNT(*) as cnt
+        FROM orders
+        WHERE {$BIZ_YEAR}=? AND {$BIZ_MONTH}=? AND branch_id = $branch_id AND status IN ($status_filter)
+        GROUP BY $BIZ_DATE ORDER BY d
+    ");
     $bar_stmt->execute([$selected_year, $selected_month]);
     $bar_data = $bar_stmt->fetchAll();
 }
@@ -150,13 +253,21 @@ $bar_json     = json_encode($bar_data);
     <link rel="stylesheet" href="<?= $base_url ?>assets/index.css">
     <link rel="stylesheet" href="<?= $base_url ?>modules/homepage/homepage.css">
     <link rel="stylesheet" href="<?= $base_url ?>modules/statistics/statistics.css">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1C3924">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 </head>
 <body>
 
 <header class="navbar">
+    <div class="navbar__logo-wrap">
     <a href="index.php?page=home" style="display:flex;align-items:center;">
         <img src="<?= $base_url ?>assets/images/logo.png" class="navbar__logo-img" alt="Twist & Roll">
     </a>
+    <span class="branch-badge"><?= htmlspecialchars($branch_name) ?></span>
+</div>
     <nav class="navbar__nav">
         <a href="index.php?page=home"       class="nav-link">Home</a>
         <a href="index.php?page=orders"     class="nav-link">Orders</a>
@@ -268,16 +379,16 @@ $bar_json     = json_encode($bar_data);
             <div class="section-view__top">
                 <h2 class="section-view__title"><?= ucfirst($selected_section) ?></h2>
                 <div class="section-view__date">
-    <img src="<?= $base_url ?>assets/images/calendar_icon.png" class="date-icon">
-    <?= $months_list[$selected_month] ?> 1 – <?= date('t',mktime(0,0,0,$selected_month,1,$selected_year)) ?>, <?= $selected_year ?>
-</div>
+                    <img src="<?= $base_url ?>assets/images/calendar_icon.png" class="date-icon">
+                    <?= $months_list[$selected_month] ?> 1 – <?= date('t',mktime(0,0,0,$selected_month,1,$selected_year)) ?>, <?= $selected_year ?>
+                </div>
             </div>
 
             <div class="section-stats">
                 <div class="section-stat">
-    <div class="section-stat__icon section-stat__icon--purple">
-        <img src="<?= $base_url ?>assets/images/totalorder_icon.png" alt="">
-    </div>
+                    <div class="section-stat__icon section-stat__icon--purple">
+                        <img src="<?= $base_url ?>assets/images/totalorder_icon.png" alt="">
+                    </div>
                     <div>
                         <div class="section-stat__label">Total <?= ucfirst($selected_section) ?></div>
                         <div class="section-stat__val"><?= $section_stats['total']??0 ?></div>
@@ -285,8 +396,8 @@ $bar_json     = json_encode($bar_data);
                 </div>
                 <div class="section-stat">
                     <div class="section-stat__icon section-stat__icon--gold">
-    <img src="<?= $base_url ?>assets/images/highest_icon.png" alt="">
-</div>
+                        <img src="<?= $base_url ?>assets/images/highest_icon.png" alt="">
+                    </div>
                     <div>
                         <div class="section-stat__label">Highest Order</div>
                         <div class="section-stat__val"><?= $section_stats['highest']?'₱'.number_format($section_stats['highest'],0):0 ?></div>
@@ -295,8 +406,8 @@ $bar_json     = json_encode($bar_data);
                 </div>
                 <div class="section-stat">
                     <div class="section-stat__icon section-stat__icon--red">
-    <img src="<?= $base_url ?>assets/images/lowest_icon.png" alt="">
-</div>
+                        <img src="<?= $base_url ?>assets/images/lowest_icon.png" alt="">
+                    </div>
                     <div>
                         <div class="section-stat__label">Lowest Order</div>
                         <div class="section-stat__val"><?= $section_stats['lowest']?'₱'.number_format($section_stats['lowest'],0):0 ?></div>
@@ -305,8 +416,8 @@ $bar_json     = json_encode($bar_data);
                 </div>
                 <div class="section-stat">
                     <div class="section-stat__icon section-stat__icon--green">
-    <img src="<?= $base_url ?>assets/images/totalsales_icon.png" alt="">
-</div>
+                        <img src="<?= $base_url ?>assets/images/totalsales_icon.png" alt="">
+                    </div>
                     <div>
                         <div class="section-stat__label">Total Sales</div>
                         <div class="section-stat__val">₱<?= number_format($section_stats['sum']??0,0) ?></div>
@@ -373,7 +484,6 @@ $bar_json     = json_encode($bar_data);
                             $ordered_at_fmt = date('M j, Y g:i A', strtotime($o['created_at']));
                             $served_at_fmt  = !empty($o['served_at']) ? date('M j, Y g:i A', strtotime($o['served_at'])) : '';
 
-                            // Date & Time column: served → served_at; others → created_at
                             $display_dt = ($selected_section === 'served' && !empty($o['served_at']))
                                 ? $served_at_fmt
                                 : $ordered_at_fmt;
@@ -434,7 +544,7 @@ $bar_json     = json_encode($bar_data);
                     <div class="ov-text">
                         <div class="ov-label">Total Sales per Day</div>
                         <div class="ov-value">₱<?= number_format($today_data['s'],0) ?></div>
-                        <div class="ov-sub"><?= date('M j, Y') ?></div>
+                        <div class="ov-sub"><?= date('M j, Y', strtotime($today)) ?> (Business Day)</div>
                     </div>
                 </div>
                 <div class="overview-card">
@@ -442,7 +552,7 @@ $bar_json     = json_encode($bar_data);
                     <div class="ov-text">
                         <div class="ov-label">Number of Orders per Day</div>
                         <div class="ov-value"><?= $today_data['c'] ?></div>
-                        <div class="ov-sub"><?= date('M j, Y') ?></div>
+                        <div class="ov-sub"><?= date('M j, Y', strtotime($today)) ?> (Business Day)</div>
                     </div>
                 </div>
                 <div class="overview-card">
@@ -511,7 +621,6 @@ $bar_json     = json_encode($bar_data);
             </div>
         </div>
 
-        <!-- Sales per Day — month/year selectors only, no weekly/monthly toggle -->
         <div class="dash-box dash-box--full">
             <div class="dash-box__header">
                 <h3>Sales per Day</h3>
@@ -547,8 +656,6 @@ $bar_json     = json_encode($bar_data);
     const CHART_YEAR     = <?= $chart_year ?>;
     const CHART_MONTH    = <?= $chart_month ?>;
 
-    // ── The Excel fetch goes to a standalone PHP file ─────────────────────
-    // This avoids the include conflict that caused "Failed to generate report"
     const EXCEL_ENDPOINT = '<?= $base_url ?>modules/statistics/statistics_ajax.php';
 
     function reloadSalesPerDay() {
@@ -563,6 +670,7 @@ $bar_json     = json_encode($bar_data);
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script src="<?= $base_url ?>modules/statistics/statistics.js"></script>
+<script src="/assets/js/pwa_register.js"></script>
 
 </body>
 </html>

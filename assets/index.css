@@ -31,6 +31,19 @@
   --radius-lg: 16px;
 }
 
+/* Dark mode — mirrors the brand palette used elsewhere (see homepage.css).
+   Applies to the shared navbar, which every page includes via index.css. */
+:root[data-theme="dark"] {
+  --bg: #101B15;
+  --surface: #182720;
+  --border: #2E4033;
+  --text-primary: #EDF3ED;
+  --text-secondary: #A9BBAD;
+  --active-green: #4FA06A;
+  --active-green-light: rgba(79, 160, 106, 0.16);
+  --error-red: #E0604C;
+}
+
 /* ── Base ───────────────────────────────────── */
 html,
 body {
