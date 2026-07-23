@@ -210,6 +210,60 @@
     });
   }
 
+  // ── STORE LOGO UPLOAD ───────────────────────────────────────────────────
+  const logoUploadBtn = document.getElementById("logo-upload-btn");
+  const logoInput     = document.getElementById("logo-input");
+  const logoPreviewImg = document.getElementById("logo-preview-img");
+
+  if (logoUploadBtn && logoInput) {
+    logoUploadBtn.addEventListener("click", () => logoInput.click());
+    logoInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        if (logoPreviewImg) logoPreviewImg.src = ev.target.result;
+        const rpLogo = document.getElementById("rp-logo");
+        if (rpLogo) rpLogo.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+      const logoForm = document.getElementById("logo-form");
+      if (logoForm) logoForm.submit();
+    });
+  }
+
+  // ── FACEBOOK QR CODE ─────────────────────────────────────────────────────
+  function renderFbQr(url) {
+    const qrWrap = document.getElementById("rp-qr-wrap");
+    const qrBox  = document.getElementById("rp-qr");
+    if (!qrWrap || !qrBox) return;
+
+    if (!url) {
+      qrWrap.style.display = "none";
+      return;
+    }
+    qrWrap.style.display = "";
+    qrBox.innerHTML = "";
+    if (typeof qrcode !== "function") return; // library not loaded, skip quietly
+
+    try {
+      const qr = qrcode(0, "M"); // type 0 = auto-detect smallest size
+      qr.addData(url);
+      qr.make();
+      qrBox.innerHTML = qr.createSvgTag({ cellSize: 3, margin: 2, scalable: true });
+    } catch (err) {
+      qrWrap.style.display = "none";
+    }
+  }
+
+  const initialFbUrl = document.getElementById("rp-qr-wrap")?.dataset.fbUrl || "";
+  renderFbQr(initialFbUrl);
+
+  const fbUrlInput = document.querySelector('[name="fb_page_url"]');
+  if (fbUrlInput) {
+    fbUrlInput.addEventListener("input", () => renderFbQr(fbUrlInput.value.trim()));
+  }
+
   // ══════════════════════════════════════════════════════════════════════
   //  RECEIPT PREVIEW — live update as user types
   // ══════════════════════════════════════════════════════════════════════
@@ -249,6 +303,14 @@
     bindToggle("show_cashier",    "rp-cashier-row");
     bindToggle("show_order_type", "rp-order-type-row");
     bindToggle("show_beeper",     "rp-beeper-row");
+
+    // Dark mode — applies instantly, saved along with the rest of the form
+    const darkModeToggle = document.getElementById("dark-mode-toggle");
+    if (darkModeToggle) {
+      darkModeToggle.addEventListener("change", () => {
+        document.documentElement.setAttribute("data-theme", darkModeToggle.checked ? "dark" : "light");
+      });
+    }
   }
 
 })();

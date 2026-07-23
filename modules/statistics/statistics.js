@@ -312,7 +312,12 @@
     const wb    = XLSX.utils.book_new();
     const mFull = ["January","February","March","April","May","June",
                    "July","August","September","October","November","December"];
-    const dailyMonth = data.daily_month || data.month || new Date().getMonth()+1;
+    // NOTE: dailyMonth can legitimately be 0 ("All Months"), so we must check
+    // for undefined/null explicitly instead of using `||`, which treats 0 as falsy
+    // and used to silently fall back to the real current month.
+    const dailyMonth = (data.daily_month !== undefined && data.daily_month !== null)
+      ? data.daily_month
+      : (data.month !== undefined && data.month !== null ? data.month : new Date().getMonth() + 1);
 
     function makeSheet(titleText, headers, rows, colWidths, statusColIdx) {
       function safeCell(v) {

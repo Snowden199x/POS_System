@@ -16,28 +16,20 @@ $stmt_user = $pdo->prepare("SELECT avatar FROM users WHERE id = ?");
 $stmt_user->execute([$branch_id]);
 $nav_user    = $stmt_user->fetch(PDO::FETCH_ASSOC);
 
-$menu_items = [
-    ['id' => 1, 'name' => 'Eruption',           'price' => 229, 'category' => 'sushi', 'image' => 'assets/images/eruption.png'],
-    ['id' => 2, 'name' => 'Cheesy Shrimp Bomb',  'price' => 169, 'category' => 'sushi', 'image' => 'assets/images/cheesyshrimp.png'],
-    ['id' => 3, 'name' => 'Crazy Crab',           'price' => 159, 'category' => 'sushi', 'image' => 'assets/images/crazycrab.png'],
-    ['id' => 4, 'name' => 'Tori Floss Maki',      'price' => 149, 'category' => 'sushi', 'image' => 'assets/images/torifloss.png'],
-    ['id' => 5, 'name' => 'Ebi Tempura Roll',     'price' => 149, 'category' => 'sushi', 'image' => 'assets/images/ebitemp.png'],
-    ['id' => 6, 'name' => 'Mango Craze',          'price' => 139, 'category' => 'sushi', 'image' => 'assets/images/mangocraze.png'],
-    ['id' => 9, 'name' => 'California Maki',      'price' => 139, 'category' => 'sushi', 'image' => 'assets/images/calimaki.png'],
-    ['id' => 7, 'name' => 'Garden Maki',          'price' => 179, 'category' => 'sushi', 'image' => 'assets/images/gardenmaki.png'],
-    ['id' => 8, 'name' => 'Red Hot Chili Roll',   'price' => 189, 'category' => 'sushi', 'image' => 'assets/images/redhotchili.png'],
-];
+// ── Menu items + per-price discount map — sourced from menu_items table ───
+// (single source of truth; previously hardcoded separately here and in
+// orders.php, which was how prices drifted out of sync between pages)
+$menu_items_stmt = $pdo->query("SELECT id, name, price, category, image FROM menu_items ORDER BY id");
+$menu_items      = array_map(function ($row) {
+    $row['price'] = (int)round($row['price']); // DECIMAL comes back as a "229.00" string — cast so it matches DISCOUNT_MAP keys
+    return $row;
+}, $menu_items_stmt->fetchAll(PDO::FETCH_ASSOC));
 
-// Discount = floor(price × 20%)
-$discount_map = [
-    229 => 45,
-    169 => 33,
-    159 => 31,
-    149 => 29,
-    139 => 27,
-    179 => 36,
-    189 => 38,
-];
+$discount_map = [];
+$disc_stmt = $pdo->query("SELECT price, discounted_price FROM menu_items WHERE discounted_price IS NOT NULL");
+foreach ($disc_stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    $discount_map[(int)round($row['price'])] = (int)round($row['price'] - $row['discounted_price']);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

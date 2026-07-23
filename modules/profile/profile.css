@@ -536,6 +536,63 @@ body {
     margin-bottom: 2px;
 }
 
+.rp-logo {
+    display: block;
+    max-width: 140px;
+    max-height: 70px;
+    margin: 0 auto 6px;
+    object-fit: contain;
+}
+
+.rp-qr-wrap {
+    text-align: center;
+    margin-top: 8px;
+}
+
+.rp-qr {
+    display: inline-block;
+    line-height: 0;
+    margin-bottom: 4px;
+}
+
+.rp-qr svg {
+    width: 84px;
+    height: 84px;
+}
+
+/* ── STORE LOGO UPLOAD ────────────────────── */
+.logo-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.logo-thumb {
+    width: 72px;
+    height: 72px;
+    border-radius: 10px;
+    border: 1.5px solid rgba(216, 195, 111, 0.3);
+    background: #FFFDEC;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.logo-thumb img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.logo-upload-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+}
+
 .rp-line {
     text-align: center;
     font-size: 11.5px;
@@ -659,4 +716,67 @@ body {
     .profile-fields--3col     { grid-template-columns: 1fr; }
     .danger-row               { flex-direction: column; align-items: flex-start; }
     .profile-page             { padding: 16px 16px 40px; }
+}
+
+/* ══════════════════════════════════════════════
+   DARK MODE — profile page
+   Same brand palette (green/gold), dark surfaces.
+   The receipt preview below is left alone on purpose:
+   it mimics printed paper, which doesn't change with
+   the admin UI's theme.
+   ══════════════════════════════════════════════ */
+:root[data-theme="dark"] .profile-card {
+    background: var(--panel-bg);
+    border-color: rgba(227, 204, 130, 0.16);
+}
+
+:root[data-theme="dark"] .avatar-placeholder {
+    background: var(--cream-card);
+}
+
+:root[data-theme="dark"] .avatar-cam-btn {
+    border-color: var(--panel-bg);
+}
+
+:root[data-theme="dark"] .profile-field__value,
+:root[data-theme="dark"] .profile-input,
+:root[data-theme="dark"] .receipt-toggle-row,
+:root[data-theme="dark"] .logo-thumb,
+:root[data-theme="dark"] .pw-requirements {
+    background: var(--cream-card);
+    border-color: rgba(227, 204, 130, 0.18);
+    color: var(--text-primary);
+}
+
+:root[data-theme="dark"] .receipt-toggle-row:hover {
+    background: rgba(227, 204, 130, 0.10);
+}
+
+:root[data-theme="dark"] .profile-input::placeholder {
+    color: var(--text-light);
+}
+
+:root[data-theme="dark"] .profile-status--active,
+:root[data-theme="dark"] .pw-match--ok {
+    background: rgba(79, 160, 106, 0.16);
+    border-color: rgba(79, 160, 106, 0.35);
+    color: #7FD69B;
+}
+
+:root[data-theme="dark"] .profile-status--inactive,
+:root[data-theme="dark"] .pw-match--err,
+:root[data-theme="dark"] .profile-alert--error {
+    background: rgba(224, 96, 76, 0.16);
+    border-color: rgba(224, 96, 76, 0.35);
+    color: #F0A093;
+}
+
+:root[data-theme="dark"] .profile-alert--success {
+    background: rgba(79, 160, 106, 0.16);
+    border-color: rgba(79, 160, 106, 0.35);
+    color: #7FD69B;
+}
+
+:root[data-theme="dark"] .profile-card--danger {
+    border-color: rgba(224, 96, 76, 0.3);
 }

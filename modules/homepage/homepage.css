@@ -34,6 +34,29 @@
     --radius-pill:  999px;
 }
 
+/* ── Dark mode — same brand palette (green/gold accents unchanged),
+   surfaces and text inverted for a dark, aesthetic look.
+   Toggled via data-theme="dark" on <html> (see Profile → Receipt Settings). */
+:root[data-theme="dark"] {
+    --green-100:    #4FA06A;
+    --green-5:      rgba(79,160,106,0.08);
+    --cream:        #1B2A22;
+    --gold-100:     #E3CC82;
+    --gold-20:      rgba(227,204,130,0.16);
+    --white:        #FFFFFF;
+    --border:       #2E4033;
+    --border-dark:  #3A4F40;
+    --text-primary: #EDF3ED;
+    --text-muted:   #A9BBAD;
+    --text-light:   #7C8F80;
+    --panel-bg:     #182720;
+    --cream-card:   #223327;
+    --red:          #E0604C;
+    --shadow-sm:    0 1px 4px rgba(0,0,0,0.25);
+    --shadow-md:    0 4px 16px rgba(0,0,0,0.32);
+    --shadow-lg:    0 8px 32px rgba(0,0,0,0.4);
+}
+
 html, body {
     height: 100%;
 }

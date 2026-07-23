@@ -110,54 +110,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // ── Upload Store Logo ──────────────────────────────────────────────────
+    if (isset($_POST['action']) && $_POST['action'] === 'upload_logo') {
+        if (!empty($_FILES['logo']['name'])) {
+            $ext      = pathinfo($_FILES['logo']['name'], PATHINFO_EXTENSION);
+            $filename = 'logo_' . time() . '.' . $ext;
+            $dest     = __DIR__ . '/../../assets/images/' . $filename;
+
+            if (move_uploaded_file($_FILES['logo']['tmp_name'], $dest)) {
+                $logo_path = 'assets/images/' . $filename;
+                $upd = $pdo->prepare("UPDATE receipt_settings SET logo_path = ? WHERE id = 1");
+                $upd->execute([$logo_path]);
+                $receipt['logo_path'] = $logo_path;
+                $success_msg = 'Logo updated successfully.';
+            }
+        }
+    }
+
     // ── Save Receipt Settings ──────────────────────────────────────────────
     if (isset($_POST['action']) && $_POST['action'] === 'save_receipt') {
-        $store_name      = trim($_POST['store_name']      ?? '');
         $store_address   = trim($_POST['store_address']   ?? '');
         $store_contact   = trim($_POST['store_contact']   ?? '');
+        $fb_page_url     = trim($_POST['fb_page_url']      ?? '');
         $receipt_header  = trim($_POST['receipt_header']  ?? '');
         $receipt_footer  = trim($_POST['receipt_footer']  ?? '');
         $show_discount   = isset($_POST['show_discount'])  ? 1 : 0;
         $show_cashier    = isset($_POST['show_cashier'])   ? 1 : 0;
         $show_order_type = isset($_POST['show_order_type'])? 1 : 0;
         $show_beeper     = isset($_POST['show_beeper'])    ? 1 : 0;
+        $dark_mode       = isset($_POST['dark_mode'])       ? 1 : 0;
 
         $rs_upd = $pdo->prepare("
             UPDATE receipt_settings SET
-                store_name      = ?,
                 store_address   = ?,
                 store_contact   = ?,
+                fb_page_url     = ?,
                 receipt_header  = ?,
                 receipt_footer  = ?,
                 show_discount   = ?,
                 show_cashier    = ?,
                 show_order_type = ?,
-                show_beeper     = ?
+                show_beeper     = ?,
+                dark_mode       = ?
             WHERE id = 1
         ");
         $rs_upd->execute([
-            $store_name, $store_address, $store_contact,
+            $store_address, $store_contact, $fb_page_url,
             $receipt_header, $receipt_footer,
             $show_discount, $show_cashier, $show_order_type, $show_beeper,
+            $dark_mode,
         ]);
 
         // Refresh local var
-        $receipt['store_name']      = $store_name;
         $receipt['store_address']   = $store_address;
         $receipt['store_contact']   = $store_contact;
+        $receipt['fb_page_url']     = $fb_page_url;
         $receipt['receipt_header']  = $receipt_header;
         $receipt['receipt_footer']  = $receipt_footer;
         $receipt['show_discount']   = $show_discount;
         $receipt['show_cashier']    = $show_cashier;
         $receipt['show_order_type'] = $show_order_type;
         $receipt['show_beeper']     = $show_beeper;
+        $receipt['dark_mode']       = $dark_mode;
 
         $success_msg = 'Receipt settings saved successfully.';
     }
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="<?= !empty($receipt['dark_mode']) ? 'dark' : 'light' ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -465,14 +486,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <form method="POST" id="receipt-form">
                     <input type="hidden" name="action" value="save_receipt">
 
+                    <!-- Store Logo -->
+                    <p class="receipt-section-label">Store Logo</p>
+                    <div class="logo-upload-row">
+                        <div class="logo-thumb" id="logo-thumb">
+                            <img src="<?= htmlspecialchars($base_url . (!empty($receipt['logo_path']) ? $receipt['logo_path'] : 'assets/images/logo.png')) ?>"
+                                 id="logo-preview-img" alt="Store logo">
+                        </div>
+                        <div class="logo-upload-actions">
+                            <button type="button" class="profile-btn-secondary" id="logo-upload-btn" style="width:auto;padding:9px 18px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                                Upload Logo
+                            </button>
+                            <span class="label-optional">Shown on the receipt instead of a plain store name.</span>
+                        </div>
+                        <form id="logo-form" method="POST" enctype="multipart/form-data" style="display:none;">
+                            <input type="hidden" name="action" value="upload_logo">
+                            <input type="file" id="logo-input" name="logo" accept="image/*">
+                        </form>
+                    </div>
+
                     <!-- Store Info -->
-                    <p class="receipt-section-label">Store Information</p>
+                    <p class="receipt-section-label" style="margin-top:18px;">Store Information</p>
                     <div class="profile-fields profile-fields--2col">
-                        <div class="profile-field">
-                            <label class="profile-field__label">Store Name</label>
-                            <input class="profile-input" type="text" name="store_name"
-                                   value="<?= htmlspecialchars($receipt['store_name'] ?? '') ?>"
-                                   placeholder="Twist & Roll">
+                        <div class="profile-field profile-field--full">
+                            <label class="profile-field__label">Facebook Page URL <span class="label-optional">(shown as a QR code on the receipt)</span></label>
+                            <input class="profile-input" type="url" name="fb_page_url"
+                                   value="<?= htmlspecialchars($receipt['fb_page_url'] ?? '') ?>"
+                                   placeholder="https://www.facebook.com/...">
                         </div>
                         <div class="profile-field">
                             <label class="profile-field__label">Contact Number</label>
@@ -486,6 +530,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                    value="<?= htmlspecialchars($receipt['store_address'] ?? '') ?>"
                                    placeholder="e.g. 123 Main St, City">
                         </div>
+                    </div>
+
+                    <!-- Appearance -->
+                    <p class="receipt-section-label" style="margin-top:18px;">Appearance</p>
+                    <div class="receipt-toggles">
+                        <label class="receipt-toggle-row">
+                            <span class="receipt-toggle-label">Dark mode</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="dark_mode" id="dark-mode-toggle" <?= !empty($receipt['dark_mode']) ? 'checked' : '' ?>>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </label>
                     </div>
 
                     <!-- Receipt Text -->
@@ -541,7 +597,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <!-- Receipt Preview -->
                     <p class="receipt-section-label" style="margin-top:18px;">Preview</p>
                     <div class="receipt-preview" id="receipt-preview">
-                        <div class="rp-store-name"  id="rp-store-name"><?= htmlspecialchars($receipt['store_name'] ?? 'Twist & Roll') ?></div>
+                        <img class="rp-logo" id="rp-logo"
+                             src="<?= htmlspecialchars($base_url . (!empty($receipt['logo_path']) ? $receipt['logo_path'] : 'assets/images/logo.png')) ?>"
+                             alt="Store logo">
                         <?php if (!empty($receipt['store_address'])): ?>
                         <div class="rp-line" id="rp-address"><?= htmlspecialchars($receipt['store_address']) ?></div>
                         <?php else: ?>
@@ -580,6 +638,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <div class="rp-divider"></div>
                         <div class="rp-footer" id="rp-footer"><?= htmlspecialchars($receipt['receipt_footer'] ?? 'Thank you for dining with us!') ?></div>
+                        <?php if (!empty($receipt['fb_page_url'])): ?>
+                        <div class="rp-qr-wrap" id="rp-qr-wrap" data-fb-url="<?= htmlspecialchars($receipt['fb_page_url']) ?>">
+                            <div class="rp-qr" id="rp-qr"></div>
+                            <div class="rp-line">Follow us on Facebook</div>
+                        </div>
+                        <?php else: ?>
+                        <div class="rp-qr-wrap" id="rp-qr-wrap" data-fb-url="" style="display:none;">
+                            <div class="rp-qr" id="rp-qr"></div>
+                            <div class="rp-line">Follow us on Facebook</div>
+                        </div>
+                        <?php endif; ?>
                     </div>
 
                     <div class="profile-form-actions profile-form-actions--right" style="margin-top:18px;">
@@ -622,6 +691,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div><!-- /.profile-layout -->
 </div><!-- /.profile-page -->
 
+<script src="<?= $base_url ?>assets/js/vendor/qrcode.js"></script>
+<script src="<?= $base_url ?>assets/js/vendor/qrcode_UTF8.js"></script>
 <script src="<?= $base_url ?>modules/profile/profile.js"></script>
 <script src="/assets/js/pwa_register.js"></script>
 </body>
