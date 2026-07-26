@@ -1,6 +1,13 @@
 (function () {
   "use strict";
 
+  // ── TOAST AUTO-DISMISS ───────────────────────────────────────────────────
+  document.querySelectorAll(".toast-container .profile-alert").forEach((toast) => {
+    toast.addEventListener("animationend", (e) => {
+      if (e.animationName === "toast-out") toast.remove();
+    });
+  });
+
   // ── CLOCK ──────────────────────────────────────────────────────────────
   function updateClock() {
     const now    = new Date();
@@ -292,10 +299,8 @@
       });
     }
 
-    bindText("store_name",     "rp-store-name");
     bindText("store_address",  "rp-address");
     bindText("store_contact",  "rp-contact");
-    bindText("store_tin",      "rp-tin", "TIN: ");
     bindText("receipt_header", "rp-header");
     bindText("receipt_footer", "rp-footer");
 
@@ -303,14 +308,28 @@
     bindToggle("show_cashier",    "rp-cashier-row");
     bindToggle("show_order_type", "rp-order-type-row");
     bindToggle("show_beeper",     "rp-beeper-row");
+  }
 
-    // Dark mode — applies instantly, saved along with the rest of the form
-    const darkModeToggle = document.getElementById("dark-mode-toggle");
-    if (darkModeToggle) {
-      darkModeToggle.addEventListener("change", () => {
-        document.documentElement.setAttribute("data-theme", darkModeToggle.checked ? "dark" : "light");
-      });
-    }
+  // ── DARK MODE (own section, instant save) ───────────────────────────────
+  const darkModeToggle = document.getElementById("dark-mode-toggle");
+  if (darkModeToggle) {
+    darkModeToggle.addEventListener("change", () => {
+      const isDark = darkModeToggle.checked;
+      document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+
+      const endpoint = darkModeToggle.dataset.endpoint || window.location.pathname;
+      fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ action: "toggle_dark_mode", dark_mode: isDark ? "1" : "0" }),
+      })
+        .then((res) => res.json())
+        .catch(() => {
+          // Save failed — revert the toggle and theme so the UI doesn't lie about what's saved
+          darkModeToggle.checked = !isDark;
+          document.documentElement.setAttribute("data-theme", !isDark ? "dark" : "light");
+        });
+    });
   }
 
 })();

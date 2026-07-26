@@ -20,6 +20,9 @@ $stmt_user = $pdo->prepare("SELECT avatar FROM users WHERE id = ?");
 $stmt_user->execute([$branch_id]);
 $nav_user = $stmt_user->fetch(PDO::FETCH_ASSOC);
 
+// Dark mode is a global preference set from Profile → Appearance
+$dark_mode = (int)($pdo->query("SELECT dark_mode FROM receipt_settings WHERE id = 1")->fetchColumn() ?: 0);
+
 $selected_year    = isset($_GET['year'])    ? (int)$_GET['year']    : (int)date('Y');
 $selected_month   = isset($_GET['month'])   ? (int)$_GET['month']   : (int)date('m');
 $selected_section = isset($_GET['section']) ? $_GET['section']      : null;
@@ -244,7 +247,7 @@ $monthly_json = json_encode($monthly_trend);
 $bar_json     = json_encode($bar_data);
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="<?= $dark_mode ? 'dark' : 'light' ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
