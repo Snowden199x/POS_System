@@ -1,4 +1,6 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) session_start();
+
 if (!isset($_SESSION["logged_in"])) {
     header("Location: ../../index.php");
     exit();
@@ -127,6 +129,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // ── Toggle Dark Mode (instant save, own section) ────────────────────────
+    if (isset($_POST['action']) && $_POST['action'] === 'toggle_dark_mode') {
+        $dark_mode = !empty($_POST['dark_mode']) ? 1 : 0;
+        $pdo->prepare("UPDATE receipt_settings SET dark_mode = ? WHERE id = 1")->execute([$dark_mode]);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'dark_mode' => $dark_mode]);
+        exit;
+    }
+
     // ── Save Receipt Settings ──────────────────────────────────────────────
     if (isset($_POST['action']) && $_POST['action'] === 'save_receipt') {
         $store_address   = trim($_POST['store_address']   ?? '');
@@ -138,7 +149,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $show_cashier    = isset($_POST['show_cashier'])   ? 1 : 0;
         $show_order_type = isset($_POST['show_order_type'])? 1 : 0;
         $show_beeper     = isset($_POST['show_beeper'])    ? 1 : 0;
-        $dark_mode       = isset($_POST['dark_mode'])       ? 1 : 0;
 
         $rs_upd = $pdo->prepare("
             UPDATE receipt_settings SET
@@ -150,15 +160,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 show_discount   = ?,
                 show_cashier    = ?,
                 show_order_type = ?,
-                show_beeper     = ?,
-                dark_mode       = ?
+                show_beeper     = ?
             WHERE id = 1
         ");
         $rs_upd->execute([
             $store_address, $store_contact, $fb_page_url,
             $receipt_header, $receipt_footer,
             $show_discount, $show_cashier, $show_order_type, $show_beeper,
-            $dark_mode,
         ]);
 
         // Refresh local var
@@ -171,7 +179,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $receipt['show_cashier']    = $show_cashier;
         $receipt['show_order_type'] = $show_order_type;
         $receipt['show_beeper']     = $show_beeper;
-        $receipt['dark_mode']       = $dark_mode;
 
         $success_msg = 'Receipt settings saved successfully.';
     }
@@ -183,7 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile — Twist &amp; Roll</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Unbounded:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= $base_url ?>assets/index.css">
     <link rel="stylesheet" href="<?= $base_url ?>modules/homepage/homepage.css">
     <link rel="stylesheet" href="<?= $base_url ?>modules/profile/profile.css">
@@ -256,12 +263,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h1 class="profile-page__title">My Profile</h1>
     <p class="profile-page__sub">Manage your account information, security settings, and receipt preferences.</p>
 
-    <?php if ($success_msg): ?>
-    <div class="profile-alert profile-alert--success"><?= htmlspecialchars($success_msg) ?></div>
-    <?php endif; ?>
-    <?php if ($error_msg): ?>
-    <div class="profile-alert profile-alert--error"><?= htmlspecialchars($error_msg) ?></div>
-    <?php endif; ?>
+    <div class="toast-container" id="toast-container">
+        <?php if ($success_msg): ?>
+        <div class="profile-alert profile-alert--success">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <span><?= htmlspecialchars($success_msg) ?></span>
+        </div>
+        <?php endif; ?>
+        <?php if ($error_msg): ?>
+        <div class="profile-alert profile-alert--error">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span><?= htmlspecialchars($error_msg) ?></span>
+        </div>
+        <?php endif; ?>
+    </div>
 
     <div class="profile-layout">
 
@@ -483,6 +505,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
 
+                <form id="logo-form" method="POST" enctype="multipart/form-data" style="display:none;">
+                    <input type="hidden" name="action" value="upload_logo">
+                    <input type="file" id="logo-input" name="logo" accept="image/*">
+                </form>
+
                 <form method="POST" id="receipt-form">
                     <input type="hidden" name="action" value="save_receipt">
 
@@ -503,10 +530,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </button>
                             <span class="label-optional">Shown on the receipt instead of a plain store name.</span>
                         </div>
-                        <form id="logo-form" method="POST" enctype="multipart/form-data" style="display:none;">
-                            <input type="hidden" name="action" value="upload_logo">
-                            <input type="file" id="logo-input" name="logo" accept="image/*">
-                        </form>
                     </div>
 
                     <!-- Store Info -->
@@ -530,18 +553,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                    value="<?= htmlspecialchars($receipt['store_address'] ?? '') ?>"
                                    placeholder="e.g. 123 Main St, City">
                         </div>
-                    </div>
-
-                    <!-- Appearance -->
-                    <p class="receipt-section-label" style="margin-top:18px;">Appearance</p>
-                    <div class="receipt-toggles">
-                        <label class="receipt-toggle-row">
-                            <span class="receipt-toggle-label">Dark mode</span>
-                            <label class="toggle-switch">
-                                <input type="checkbox" name="dark_mode" id="dark-mode-toggle" <?= !empty($receipt['dark_mode']) ? 'checked' : '' ?>>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </label>
                     </div>
 
                     <!-- Receipt Text -->
@@ -600,53 +611,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <img class="rp-logo" id="rp-logo"
                              src="<?= htmlspecialchars($base_url . (!empty($receipt['logo_path']) ? $receipt['logo_path'] : 'assets/images/logo.png')) ?>"
                              alt="Store logo">
+
+                        <div class="rp-storename"><?= htmlspecialchars(strtoupper($receipt['store_name'] ?? 'Twist & Roll')) ?></div>
                         <?php if (!empty($receipt['store_address'])): ?>
                         <div class="rp-line" id="rp-address"><?= htmlspecialchars($receipt['store_address']) ?></div>
                         <?php else: ?>
-                        <div class="rp-line rp-placeholder" id="rp-address">Address goes here</div>
+                        <div class="rp-line rp-placeholder" id="rp-address">ADDRESS GOES HERE</div>
                         <?php endif; ?>
                         <?php if (!empty($receipt['store_contact'])): ?>
                         <div class="rp-line" id="rp-contact"><?= htmlspecialchars($receipt['store_contact']) ?></div>
                         <?php else: ?>
-                        <div class="rp-line rp-placeholder" id="rp-contact">Contact number</div>
+                        <div class="rp-line rp-placeholder" id="rp-contact">CONTACT NUMBER</div>
                         <?php endif; ?>
+
                         <?php if (!empty($receipt['receipt_header'])): ?>
-                        <div class="rp-divider"></div>
                         <div class="rp-line rp-header" id="rp-header"><?= htmlspecialchars($receipt['receipt_header']) ?></div>
                         <?php else: ?>
-                        <div class="rp-divider"></div>
                         <div class="rp-line rp-placeholder rp-header" id="rp-header"></div>
                         <?php endif; ?>
+
                         <div class="rp-divider"></div>
-                        <div class="rp-row"><span>1x Eruption</span><span>Php 229</span></div>
-                        <div class="rp-row"><span>2x Mango Craze</span><span>Php 278</span></div>
+                        <div class="rp-info-row">
+                            <div class="rp-info-col">
+                                <div>STORE: MAIN BRANCH</div>
+                                <div id="rp-order-type-row" style="<?= $receipt['show_order_type'] ? '' : 'display:none' ?>">ORDER TYPE: DINE IN</div>
+                                <div>PAYMENT TYPE: CASH</div>
+                                <div id="rp-cashier-row" style="<?= $receipt['show_cashier'] ? '' : 'display:none' ?>">CASHIER: <?= htmlspecialchars(strtoupper($user['full_name'])) ?></div>
+                            </div>
+                            <div class="rp-info-col rp-info-col--right">
+                                <div>MM - DD - YYYY&nbsp;&nbsp;&nbsp;00:00</div>
+                                <div id="rp-beeper-row" style="<?= $receipt['show_beeper'] ? '' : 'display:none' ?>">BEEPER #: 1</div>
+                            </div>
+                        </div>
+
                         <div class="rp-divider"></div>
-                        <div class="rp-row"><span>Subtotal</span><span>Php 507</span></div>
+                        <div class="rp-row rp-col-headers"><span>ITEM</span><span>QTY</span><span>PRICE</span></div>
+                        <div class="rp-divider"></div>
+                        <div class="rp-row rp-item"><span>Eruption</span><span>1</span><span>229</span></div>
+                        <div class="rp-row rp-item"><span>California Maki</span><span>1</span><span>144</span></div>
+                        <div class="rp-row rp-item"><span>Cheesy Shrimp Bomb</span><span>2</span><span>348</span></div>
+
+                        <div class="rp-divider"></div>
+                        <div class="rp-row"><span>SUBTOTAL</span><span>721</span></div>
                         <div class="rp-row rp-discount" id="rp-discount-row" style="<?= $receipt['show_discount'] ? '' : 'display:none' ?>">
-                            <span>Discount</span><span>−Php 27</span>
+                            <span>DISCOUNT</span><span>-45</span>
                         </div>
-                        <div class="rp-row rp-total"><span>TOTAL</span><span>Php 480</span></div>
+                        <div class="rp-row rp-total"><span>TOTAL</span><span>676</span></div>
+
                         <div class="rp-divider"></div>
-                        <div class="rp-row rp-meta" id="rp-order-type-row" style="<?= $receipt['show_order_type'] ? '' : 'display:none' ?>">
-                            <span>Order Type</span><span>Dine In</span>
-                        </div>
-                        <div class="rp-row rp-meta" id="rp-beeper-row" style="<?= $receipt['show_beeper'] ? '' : 'display:none' ?>">
-                            <span>Beeper #</span><span>7</span>
-                        </div>
-                        <div class="rp-row rp-meta" id="rp-cashier-row" style="<?= $receipt['show_cashier'] ? '' : 'display:none' ?>">
-                            <span>Cashier</span><span><?= htmlspecialchars($user['full_name']) ?></span>
-                        </div>
-                        <div class="rp-divider"></div>
-                        <div class="rp-footer" id="rp-footer"><?= htmlspecialchars($receipt['receipt_footer'] ?? 'Thank you for dining with us!') ?></div>
+                        <div class="rp-thankyou">THANK YOU !!!</div>
+                        <div class="rp-footer" id="rp-footer"><?= htmlspecialchars($receipt['receipt_footer'] ?? 'Follow us for updates, promos, and new menu items.') ?></div>
+
                         <?php if (!empty($receipt['fb_page_url'])): ?>
                         <div class="rp-qr-wrap" id="rp-qr-wrap" data-fb-url="<?= htmlspecialchars($receipt['fb_page_url']) ?>">
                             <div class="rp-qr" id="rp-qr"></div>
-                            <div class="rp-line">Follow us on Facebook</div>
+                            <div class="rp-line rp-fb-caption">facebook page: <?= htmlspecialchars($receipt['store_name'] ?? 'Twist & Roll') ?></div>
                         </div>
                         <?php else: ?>
                         <div class="rp-qr-wrap" id="rp-qr-wrap" data-fb-url="" style="display:none;">
                             <div class="rp-qr" id="rp-qr"></div>
-                            <div class="rp-line">Follow us on Facebook</div>
+                            <div class="rp-line rp-fb-caption">facebook page: <?= htmlspecialchars($receipt['store_name'] ?? 'Twist & Roll') ?></div>
                         </div>
                         <?php endif; ?>
                     </div>
@@ -662,6 +686,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </button>
                     </div>
                 </form>
+            </div>
+
+            <!-- ── Appearance ── -->
+            <div class="profile-card">
+                <div class="profile-card__header">
+                    <div class="profile-card__header-left">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        <span>Appearance</span>
+                    </div>
+                </div>
+                <div class="receipt-toggles">
+                    <label class="receipt-toggle-row">
+                        <span class="receipt-toggle-label">Dark mode</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="dark-mode-toggle"
+                                   data-endpoint="<?= htmlspecialchars($base_url) ?>modules/profile/profile.php"
+                                   <?= !empty($receipt['dark_mode']) ? 'checked' : '' ?>>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </label>
+                </div>
             </div>
 
             <!-- ── Danger Zone ── -->

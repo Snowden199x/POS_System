@@ -1232,3 +1232,36 @@ body {
         border-radius: 35px;
     }
 }
+/* ══════════════════════════════════════════════
+   DARK MODE — homepage / shared navbar
+   The frosted-glass nav pill uses a hardcoded
+   cream-tinted overlay rather than a variable,
+   so it needs its own dark equivalent.
+   ══════════════════════════════════════════════ */
+:root[data-theme="dark"] .navbar__nav {
+    background: rgba(24, 39, 32, 0.45);
+    border-color: rgba(227, 204, 130, 0.18);
+}
+
+/* ══════════════════════════════════════════════
+   DARK MODE — fix: several surfaces used var(--white)
+   directly as their background instead of var(--panel-bg),
+   so they stayed pure white in dark mode with light text
+   on top of them (illegible). This also fixes the same
+   components inside the Edit Order modal, since orders.php
+   loads this stylesheet too.
+   ══════════════════════════════════════════════ */
+:root[data-theme="dark"] .order-panel__beeper,
+:root[data-theme="dark"] .order-item,
+:root[data-theme="dark"] .payment-summary,
+:root[data-theme="dark"] .payment-btn:not(.payment-btn--active),
+:root[data-theme="dark"] .amount-input,
+:root[data-theme="dark"] .profile-dropdown {
+    background: var(--panel-bg);
+    border-color: rgba(227, 204, 130, 0.18);
+}
+
+:root[data-theme="dark"] .order-panel__beeper::placeholder,
+:root[data-theme="dark"] .amount-input::placeholder {
+    color: var(--text-light);
+}

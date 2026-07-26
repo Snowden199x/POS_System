@@ -16,6 +16,9 @@ $stmt_user = $pdo->prepare("SELECT avatar FROM users WHERE id = ?");
 $stmt_user->execute([$branch_id]);
 $nav_user = $stmt_user->fetch(PDO::FETCH_ASSOC);
 
+// Dark mode is a global preference set from Profile → Appearance
+$dark_mode = (int)($pdo->query("SELECT dark_mode FROM receipt_settings WHERE id = 1")->fetchColumn() ?: 0);
+
 date_default_timezone_set('Asia/Manila');
 $now = new DateTime('now', new DateTimeZone('Asia/Manila'));
 
@@ -50,7 +53,7 @@ foreach ($served_orders as $o) {
 sort($unique_biz_dates);
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="<?= $dark_mode ? 'dark' : 'light' ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

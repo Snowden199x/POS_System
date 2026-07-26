@@ -920,3 +920,89 @@
 .crumb-icon{
     margin-right:6px;
 }
+/* ══════════════════════════════════════════════
+   DARK MODE — statistics page
+   Same brand palette (green/gold), dark surfaces.
+   Most of this page already uses the shared CSS
+   variables (see homepage.css's :root override) —
+   these are just the spots with their own hardcoded
+   light-paper colors.
+   ══════════════════════════════════════════════ */
+:root[data-theme="dark"] .dash-action-btn--excel,
+:root[data-theme="dark"] .profile-dropdown,
+:root[data-theme="dark"] .live-order-card,
+:root[data-theme="dark"] .excel-option-card,
+:root[data-theme="dark"] .overview-card,
+:root[data-theme="dark"] .overview-section,
+:root[data-theme="dark"] .dash-box,
+:root[data-theme="dark"] .section-stat,
+:root[data-theme="dark"] .section-chart-wrap,
+:root[data-theme="dark"] .orders-list-wrap,
+:root[data-theme="dark"] .order-modal,
+:root[data-theme="dark"] .live-modal,
+:root[data-theme="dark"] .live-modal__header,
+:root[data-theme="dark"] .excel-modal {
+    background: var(--panel-bg);
+    border-color: rgba(227, 204, 130, 0.16);
+}
+
+:root[data-theme="dark"] .dash-action-btn--excel:hover,
+:root[data-theme="dark"] .excel-option-card:hover {
+    background: var(--cream-card);
+}
+
+:root[data-theme="dark"] .order-close-btn {
+    background: var(--cream-card);
+    border-color: rgba(227, 204, 130, 0.2);
+    color: var(--text-primary);
+}
+
+:root[data-theme="dark"] .order-close-btn:hover {
+    background: rgba(227, 204, 130, 0.14);
+}
+
+:root[data-theme="dark"] .order-number {
+    background: rgba(227, 204, 130, 0.22);
+    color: #E3CC82;
+}
+
+:root[data-theme="dark"] .order-date {
+    color: var(--text-muted);
+}
+
+:root[data-theme="dark"] .order-title,
+:root[data-theme="dark"] .order-item,
+:root[data-theme="dark"] .summary-total {
+    color: var(--text-primary);
+}
+
+:root[data-theme="dark"] .order-divider {
+    background: rgba(227, 204, 130, 0.18);
+}
+
+:root[data-theme="dark"] .summary-row {
+    color: var(--text-muted);
+}
+
+:root[data-theme="dark"] .dash-action-btn--excel {
+    color: var(--green-100);
+}
+
+:root[data-theme="dark"] .live-modal__title,
+:root[data-theme="dark"] .live-order-card__beeper,
+:root[data-theme="dark"] .live-order-card__total,
+:root[data-theme="dark"] .excel-modal__title,
+:root[data-theme="dark"] .excel-option-card__label,
+:root[data-theme="dark"] .excel-status {
+    color: var(--text-primary);
+}
+
+:root[data-theme="dark"] .live-item {
+    color: var(--text-muted);
+}
+
+:root[data-theme="dark"] .live-spinner,
+:root[data-theme="dark"] .excel-spinner {
+    border-color: rgba(227, 204, 130, 0.25);
+    border-top-color: var(--green-100);
+}
