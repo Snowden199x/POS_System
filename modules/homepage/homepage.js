@@ -31,6 +31,17 @@
     const changeAmount    = document.getElementById('change-amount');
     const toastContainer  = document.getElementById('toast-container');
 
+    // ── Home screens (Start → Dine in/Take out → Menu & ordering) ──────────
+    const screenStart        = document.getElementById('screen-start');
+    const screenType         = document.getElementById('screen-type');
+    const screenOrder        = document.getElementById('screen-order');
+    const startOrderBtn      = document.getElementById('start-order-btn');
+    const pickDineInBtn      = document.getElementById('pick-dine-in');
+    const pickTakeOutBtn     = document.getElementById('pick-take-out');
+    const changeOrderTypeBtn = document.getElementById('change-order-type-btn');
+    const orderTypeBadgeIcon = document.getElementById('order-type-badge-icon');
+    const orderTypeBadgeLbl  = document.getElementById('order-type-badge-label');
+
     // ── Profile Dropdown & Logout ──────────────────────────────────────────
     const profileBtn      = document.getElementById('profile-btn');
     const profileDropdown = document.getElementById('profile-dropdown');
@@ -72,6 +83,38 @@
     }
     updateClock();
     setInterval(updateClock, 1000);
+
+    // ── Home screen navigation ──────────────────────────────────────────────
+    // screen-start  -> tap "Start new order"      -> screen-type
+    // screen-type   -> tap "Dine in" / "Take out"  -> screen-order (type set)
+    // screen-order  -> order placed successfully   -> back to screen-start
+    function showScreen(name) {
+        screenStart.classList.toggle('screen--active', name === 'start');
+        screenType.classList.toggle('screen--active',  name === 'type');
+        screenOrder.classList.toggle('screen--active', name === 'order');
+    }
+
+    function updateOrderTypeBadge(type) {
+        if (!orderTypeBadgeIcon || !orderTypeBadgeLbl) return;
+        if (type === 'take-out') {
+            orderTypeBadgeIcon.src     = BASE_URL + 'assets/images/take-out.png';
+            orderTypeBadgeLbl.textContent = 'Take out';
+        } else {
+            orderTypeBadgeIcon.src     = BASE_URL + 'assets/images/dine-in.png';
+            orderTypeBadgeLbl.textContent = 'Dine in';
+        }
+    }
+
+    function chooseOrderType(type) {
+        state.orderType = type;
+        updateOrderTypeBadge(type);
+        showScreen('order');
+    }
+
+    if (startOrderBtn)  startOrderBtn.addEventListener('click', () => showScreen('type'));
+    if (pickDineInBtn)  pickDineInBtn.addEventListener('click', () => chooseOrderType('dine-in'));
+    if (pickTakeOutBtn) pickTakeOutBtn.addEventListener('click', () => chooseOrderType('take-out'));
+    if (changeOrderTypeBtn) changeOrderTypeBtn.addEventListener('click', () => showScreen('type'));
 
     // ── Discount Calculation ───────────────────────────────────────────────
     function getItemDiscount(price) {
@@ -261,15 +304,6 @@
     discountToggle.addEventListener('change', () => {
         state.discountEnabled = discountToggle.checked;
         renderOrder();
-    });
-
-    // ── Order Type ─────────────────────────────────────────────────────────
-    document.querySelectorAll('.type-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('type-btn--active'));
-            btn.classList.add('type-btn--active');
-            state.orderType = btn.dataset.type;
-        });
     });
 
     // ── Payment Method ─────────────────────────────────────────────────────
@@ -480,6 +514,9 @@
                 return;
             }
             if (data.success) {
+                // ── Back to the start screen immediately ─────────────────
+                showScreen('start');
+
                 showToast('Order has been placed!', 'success');
 
                 // ── AUTO PRINT ──────────────────────────────────────────

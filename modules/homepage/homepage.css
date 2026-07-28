@@ -181,6 +181,221 @@ body {
 }
 
 /* =============================================
+   HOME SCREENS
+   Screen 1: Start new order
+   Screen 2: Dine in / Take out
+   Screen 3: Menu + ordering (.pos-layout above)
+   Only one screen is visible at a time — toggled by
+   the .screen--active class in homepage.js. The
+   [!important] rule below always wins so an inactive
+   screen never leaks through, regardless of what
+   display value its other classes (e.g. .pos-layout)
+   would otherwise set.
+   ============================================= */
+.home-main {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    height: calc(100vh - 110px);
+    width: 100%;
+}
+
+.screen:not(.screen--active) { display: none !important; }
+
+.screen--start,
+.screen--type {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    height: 100%;
+    padding: clamp(24px, 6vh, 72px) 24px;
+    overflow-y: auto;
+}
+
+.start-hero {
+    max-width: 640px;
+    width: 100%;
+}
+
+.start-hero__title {
+    font-size: clamp(26px, 3.2vw, 52px);
+    font-weight: 800;
+    color: var(--green-100);
+    margin-top: clamp(24px, 8vh, 110px);
+    line-height: 1.2;
+}
+
+.start-hero__subtitle {
+    font-size: clamp(13px, 1.2vw, 19px);
+    font-weight: 600;
+    color: var(--gold-100);
+    margin-top: 10px;
+}
+
+/* Screen 1 — big CTA button */
+.start-order-btn {
+    margin-top: clamp(32px, 6vh, 64px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    width: min(600px, 92%);
+    padding: clamp(18px, 2.4vw, 28px) 32px;
+    background: var(--gold-100);
+    border: 2px solid var(--white);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.start-order-btn:hover  { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.start-order-btn:active { transform: scale(0.98); }
+
+.start-order-btn__icon {
+    width: clamp(18px, 1.8vw, 26px);
+    height: clamp(18px, 1.8vw, 26px);
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.start-order-btn__text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+}
+
+.start-order-btn__title {
+    font-size: clamp(15px, 1.6vw, 21px);
+    font-weight: 800;
+    color: var(--green-100);
+    letter-spacing: 0.4px;
+}
+
+.start-order-btn__sub {
+    font-size: clamp(10px, 1vw, 13px);
+    font-weight: 600;
+    color: var(--green-100);
+    opacity: 0.75;
+    margin-top: 2px;
+}
+
+/* Screen 2 — Dine in / Take out cards */
+.order-type-grid {
+    margin-top: clamp(28px, 5vh, 56px);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(14px, 2vw, 24px);
+    width: min(760px, 94%);
+}
+
+.order-type-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: clamp(26px, 4vh, 40px) 20px;
+    border-radius: var(--radius-lg);
+    border: 1.5px solid var(--gold-100);
+    background: var(--white);
+    color: var(--green-100);
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.order-type-card:hover  { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.order-type-card:active { transform: scale(0.98); }
+
+.order-type-card--dine-in {
+    background: var(--green-100);
+    color: var(--white);
+    border-color: var(--gold-100);
+}
+
+.order-type-card__icon-wrap {
+    width: clamp(44px, 4.5vw, 64px);
+    height: clamp(44px, 4.5vw, 64px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--green-5);
+}
+
+.order-type-card--dine-in .order-type-card__icon-wrap { background: var(--gold-100); }
+
+.order-type-card__icon {
+    width: clamp(20px, 1.9vw, 28px);
+    height: clamp(20px, 1.9vw, 28px);
+    object-fit: contain;
+}
+
+.order-type-card__title {
+    font-size: clamp(16px, 1.7vw, 24px);
+    font-weight: 800;
+    margin-top: 4px;
+}
+
+.order-type-card__sub {
+    font-size: clamp(11px, 1vw, 14px);
+    font-weight: 500;
+}
+
+.order-type-card--dine-in .order-type-card__sub { color: var(--gold-100); opacity: 0.9; }
+.order-type-card--take-out .order-type-card__sub { color: var(--text-muted); }
+
+/* Screen 3 — read-only order-type badge (replaces the old manual toggle;
+   the type is already decided by whichever card was tapped on screen 2) */
+.order-panel__type-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 14px;
+    background: var(--green-5);
+    border: 1.5px solid var(--gold-20);
+    border-radius: 20px;
+    flex-shrink: 0;
+}
+
+.order-type-badge__icon-wrap {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gold-100);
+    flex-shrink: 0;
+}
+
+.order-type-badge__icon { width: 14px; height: 14px; object-fit: contain; }
+
+.order-type-badge__label {
+    flex: 1;
+    font-size: clamp(12px, 1.1vw, 16px);
+    font-weight: 700;
+    color: var(--green-100);
+}
+
+.order-type-badge__change {
+    border: none;
+    background: transparent;
+    color: var(--gold-100);
+    font-weight: 600;
+    font-size: clamp(10px, 0.9vw, 13px);
+    text-decoration: underline;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* =============================================
    MENU PANEL (LEFT)
    ============================================= */
 .menu-panel {
@@ -1184,6 +1399,10 @@ body {
 
     .order-item__name {
         width: 100%;
+    }
+
+    .order-type-grid {
+        grid-template-columns: 1fr;
     }
 }
 
