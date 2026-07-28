@@ -44,6 +44,7 @@ foreach ($disc_stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
     <script>
         const DISCOUNT_MAP = <?= json_encode($discount_map) ?>;
         const MENU_ITEMS   = <?= json_encode(array_column($menu_items, null, 'id')) ?>;
+        const BASE_URL     = <?= json_encode($base_url) ?>;
     </script>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1C3924">
@@ -101,7 +102,56 @@ foreach ($disc_stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
     </div>
 </header>
 
-<main class="pos-layout">
+<main class="home-main">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SCREEN 1 — Start new order
+         ═══════════════════════════════════════════════════════════ -->
+    <section class="screen screen--start screen--active" id="screen-start">
+        <div class="start-hero">
+            <h1 class="start-hero__title">Welcome to Twist &amp; Roll</h1>
+            <p class="start-hero__subtitle">Your new go-to cravings spot for Sushi</p>
+        </div>
+        <button type="button" class="start-order-btn" id="start-order-btn">
+            <img src="<?= $base_url ?>assets/images/mouse-pointer-click.png" alt="" class="start-order-btn__icon">
+            <span class="start-order-btn__text">
+                <span class="start-order-btn__title">START NEW ORDER</span>
+                <span class="start-order-btn__sub">Tap to begin your delicious journey</span>
+            </span>
+        </button>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SCREEN 2 — Dine in / Take out
+         ═══════════════════════════════════════════════════════════ -->
+    <section class="screen screen--type" id="screen-type">
+        <div class="start-hero">
+            <h1 class="start-hero__title">Welcome to Twist &amp; Roll</h1>
+            <p class="start-hero__subtitle">Your new go-to cravings spot for Sushi</p>
+        </div>
+        <div class="order-type-grid">
+            <button type="button" class="order-type-card order-type-card--dine-in" id="pick-dine-in" data-type="dine-in">
+                <span class="order-type-card__icon-wrap">
+                    <img src="<?= $base_url ?>assets/images/dine-in.png" alt="" class="order-type-card__icon">
+                </span>
+                <span class="order-type-card__title">Dine In</span>
+                <span class="order-type-card__sub">Enjoy warm at our tables</span>
+            </button>
+            <button type="button" class="order-type-card order-type-card--take-out" id="pick-take-out" data-type="take-out">
+                <span class="order-type-card__icon-wrap">
+                    <img src="<?= $base_url ?>assets/images/take-out.png" alt="" class="order-type-card__icon">
+                </span>
+                <span class="order-type-card__title">Take Out</span>
+                <span class="order-type-card__sub">Packaged fresh for the road</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SCREEN 3 — Menu + ordering (order type is already set by
+         whichever card was tapped on screen 2)
+         ═══════════════════════════════════════════════════════════ -->
+    <section class="screen screen--order pos-layout" id="screen-order">
 
     <section class="menu-panel">
         <h2 class="menu-panel__title">Menu</h2>
@@ -136,9 +186,12 @@ foreach ($disc_stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
 
     <aside class="order-panel">
 
-        <div class="order-panel__type">
-            <button class="type-btn type-btn--active" data-type="dine-in">Dine in</button>
-            <button class="type-btn" data-type="take-out">Take out</button>
+        <div class="order-panel__type-badge" id="order-type-badge">
+            <span class="order-type-badge__icon-wrap">
+                <img src="<?= $base_url ?>assets/images/dine-in.png" alt="" class="order-type-badge__icon" id="order-type-badge-icon">
+            </span>
+            <span class="order-type-badge__label" id="order-type-badge-label">Dine in</span>
+            <button type="button" class="order-type-badge__change" id="change-order-type-btn">Change</button>
         </div>
 
         <div class="order-panel__beeper" id="beeper-wrap">
@@ -209,6 +262,7 @@ foreach ($disc_stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         </button>
 
     </aside>
+    </section>
 </main>
 
     <script src="<?= $base_url ?>assets/js/main.js"></script>
