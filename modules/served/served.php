@@ -22,11 +22,13 @@ $dark_mode = (int)($pdo->query("SELECT dark_mode FROM receipt_settings WHERE id 
 date_default_timezone_set('Asia/Manila');
 $now = new DateTime('now', new DateTimeZone('Asia/Manila'));
 
-$BIZ_DATE = "DATE(CONVERT_TZ(served_at,'+00:00','+08:00') - INTERVAL 17 HOUR)";
+$BIZ_DATE = "DATE(CONVERT_TZ(served_at,'+00:00','+08:00') - INTERVAL 5 HOUR)";
 
+// Weekly reset happens every Monday at 5:00 AM (was 2:00 AM), so the served
+// list stays visible a few hours longer for the overnight/closing crew.
 $lastReset = new DateTime('now', new DateTimeZone('Asia/Manila'));
 $lastReset->modify('monday this week');
-$lastReset->setTime(2, 0, 0);
+$lastReset->setTime(5, 0, 0);
 if ($now < $lastReset) { $lastReset->modify('-7 days'); }
 $reset_datetime = $lastReset->format('Y-m-d H:i:s');
 

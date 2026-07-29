@@ -94,6 +94,23 @@
         screenOrder.classList.toggle('screen--active', name === 'order');
     }
 
+    // ── Auto-incrementing beeper number ─────────────────────────────────────
+    // Starts at 1. After each order is placed, the NEXT suggested beeper is
+    // whatever was just used + 1 — whether that number was auto-filled or
+    // typed in manually by the cashier. e.g. beeper is at #5, cashier types
+    // #1 for the next order -> the order after that suggests #2. Types #3 ->
+    // the one after suggests #4. Persisted across reloads via localStorage.
+    const BEEPER_STORAGE_KEY = 'twistroll_next_beeper';
+
+    function getNextBeeper() {
+        const v = parseInt(localStorage.getItem(BEEPER_STORAGE_KEY), 10);
+        return (!isNaN(v) && v > 0) ? v : 1;
+    }
+
+    function setNextBeeper(v) {
+        try { localStorage.setItem(BEEPER_STORAGE_KEY, String(v)); } catch (e) { /* storage unavailable */ }
+    }
+
     function updateOrderTypeBadge(type) {
         if (!orderTypeBadgeIcon || !orderTypeBadgeLbl) return;
         if (type === 'take-out') {
@@ -108,6 +125,9 @@
     function chooseOrderType(type) {
         state.orderType = type;
         updateOrderTypeBadge(type);
+        beeperInput.value = getNextBeeper();
+        beeperWrap.classList.remove('beeper-error');
+        beeperError.classList.remove('visible');
         showScreen('order');
     }
 
@@ -516,6 +536,10 @@
             if (data.success) {
                 // ── Back to the start screen immediately ─────────────────
                 showScreen('start');
+
+                // ── Advance the auto beeper counter ──────────────────────
+                const usedBeeper = parseInt(beeper, 10);
+                if (!isNaN(usedBeeper)) setNextBeeper(usedBeeper + 1);
 
                 showToast('Order has been placed!', 'success');
 

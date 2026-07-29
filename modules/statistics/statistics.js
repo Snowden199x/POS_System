@@ -7,6 +7,47 @@
   const MODAL_BG    = "#F4EFD7";
   const CHIP_BORDER = "#DDD3AF";
 
+  // ── Y-axis helpers: pick an accurate, human-friendly interval based on
+  //    the actual data range instead of a fixed "round to nearest 1000"
+  //    step, which made close-together values (e.g. 500–2,000) collapse
+  //    into duplicate-looking labels like "₱1k, ₱1k, ₱1k". ──────────────
+  function niceStep(maxValue, targetTicks) {
+    targetTicks = targetTicks || 5;
+    if (!maxValue || maxValue <= 0) return 1;
+    const rawStep   = maxValue / targetTicks;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const residual  = rawStep / magnitude;
+    let niceResidual;
+    if (residual > 5) niceResidual = 10;
+    else if (residual > 2) niceResidual = 5;
+    else if (residual > 1) niceResidual = 2;
+    else niceResidual = 1;
+    return niceResidual * magnitude;
+  }
+
+  function formatPesoTick(v, maxValue) {
+    if (maxValue >= 10000) {
+      const k = v / 1000;
+      const rounded = Math.round(k * 10) / 10;
+      return `₱${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)}k`;
+    }
+    return `₱${Math.round(v).toLocaleString()}`;
+  }
+
+  function pesoYAxis(values) {
+    const maxValue = Math.max(0, ...values);
+    return {
+      ticks: {
+        stepSize: niceStep(maxValue),
+        callback: (v) => formatPesoTick(v, maxValue),
+        font: { family: "Poppins", size: 11 },
+        color: "#5A6B5E",
+      },
+      grid: { color: "rgba(0,0,0,0.05)" },
+      beginAtZero: true,
+    };
+  }
+
   // ── TREND LINE CHART ───────────────────────────────────────────────────
   let trendChart = null;
 
@@ -45,8 +86,7 @@
           tooltip:{callbacks:{label:(ctx)=>`₱${ctx.parsed.y.toLocaleString()}`}},
           datalabels:false },
         scales: {
-          y: { ticks:{callback:(v)=>`₱${(v/1000).toFixed(0)}k`,font:{family:"Poppins",size:11},color:"#5A6B5E"},
-            grid:{color:"rgba(0,0,0,0.05)"},beginAtZero:true },
+          y: pesoYAxis(values),
           x: { ticks:{font:{family:"Poppins",size:11},color:"#5A6B5E"},grid:{display:false} },
         },
       },
@@ -76,8 +116,7 @@
           tooltip:{callbacks:{label:(ctx)=>`₱${ctx.parsed.y.toLocaleString()}`}},
           datalabels:false },
         scales: {
-          y: { ticks:{callback:(v)=>`₱${(v/1000).toFixed(0)}k`,font:{family:"Poppins",size:11},color:"#5A6B5E"},
-            grid:{color:"rgba(0,0,0,0.05)"},beginAtZero:true },
+          y: pesoYAxis(values),
           x: { ticks:{font:{family:"Poppins",size:11},color:"#5A6B5E"},grid:{display:false} },
         },
       },
@@ -728,7 +767,7 @@
         responsive:true,
         onClick:(e,els)=>{ if(els.length>0){const mo=MONTHLY_DATA[els[0].index].mo;window.location.href=`?page=statistics&sidebar=1&year=${SELECTED_YEAR}&month=${mo}&section=orders`;} },
         plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>`₱${ctx.parsed.y.toLocaleString()}`,afterLabel:()=>"Click to view orders"}},datalabels:false},
-        scales:{y:{ticks:{callback:(v)=>`₱${(v/1000).toFixed(0)}k`,font:{family:"Poppins",size:11},color:"#5A6B5E"},grid:{color:"rgba(0,0,0,0.05)"},beginAtZero:true},x:{ticks:{font:{family:"Poppins",size:11},color:"#5A6B5E"},grid:{display:false}}},
+        scales:{y:pesoYAxis(values),x:{ticks:{font:{family:"Poppins",size:11},color:"#5A6B5E"},grid:{display:false}}},
       },
     });
     const list=document.getElementById("annual-month-list");

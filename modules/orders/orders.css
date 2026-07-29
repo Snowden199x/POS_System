@@ -135,9 +135,9 @@
 }
 
 .order-id {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--green-100);
+    font-size: 22px;
+    font-weight: 800;
+    color: #8B1A1A;
 }
 
 .badge {

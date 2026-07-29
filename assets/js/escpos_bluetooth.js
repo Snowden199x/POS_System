@@ -72,9 +72,10 @@ const BluetoothPrinter = (function () {
         return left + ' '.repeat(pad) + right;
     }
 
-    // Divider line (32 dashes)
-    function divider(char) {
-        return (char || '-').repeat(32);
+    // Divider line
+    function divider(char, width) {
+        width = width || 32;
+        return (char || '-').repeat(width);
     }
 
     // Merge multiple Uint8Arrays into one
@@ -89,6 +90,49 @@ const BluetoothPrinter = (function () {
         return out;
     }
 
+    // ── Paper width: 58mm thermal paper prints 32 characters per line at
+    //    normal (non-double-width) font. Every divider/column layout below
+    //    is sized against this constant so it stays correct on 58mm rolls. ──
+    const PAPER_WIDTH = 32;
+
+    // Pad three columns into one line: first col left-aligned, middle col
+    // centered, last col right-aligned. Column widths must sum to <= PAPER_WIDTH.
+    function padCols(cols, widths) {
+        let out = '';
+        for (let i = 0; i < cols.length; i++) {
+            const w = widths[i];
+            let text = String(cols[i]);
+            if (text.length > w) text = text.substring(0, w);
+            if (i === cols.length - 1) {
+                out += text.padStart(w, ' ');
+            } else if (i === 0) {
+                out += text.padEnd(w, ' ');
+            } else {
+                const pad = w - text.length;
+                const left = Math.floor(pad / 2), right = pad - left;
+                out += ' '.repeat(left) + text + ' '.repeat(right);
+            }
+        }
+        return out;
+    }
+
+    // ── ESC/POS native QR code (GS ( k — 2D barcode, model 2) ─────────────
+    // Supported by the large majority of generic 58mm ESC/POS printers.
+    function qrCode(url) {
+        if (!url) return new Uint8Array(0);
+        const data     = encode(url);
+        const storeLen = data.length + 3;
+        const pL = storeLen & 0xFF, pH = (storeLen >> 8) & 0xFF;
+
+        const selectModel = cmd(GS, 0x28, 0x6B, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00);
+        const setSize      = cmd(GS, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, 0x06); // module size 6
+        const setEC        = cmd(GS, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x31); // EC level M
+        const storeHeader  = cmd(GS, 0x28, 0x6B, pL, pH, 0x31, 0x50, 0x30);
+        const printCmd     = cmd(GS, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30);
+
+        return mergeBytes([selectModel, setSize, setEC, storeHeader, data, printCmd]);
+    }
+
     // ── Build receipt bytes ───────────────────────────────────────────────
     function buildReceipt(order, settings) {
         const parts = [];
@@ -101,6 +145,7 @@ const BluetoothPrinter = (function () {
         push(ALIGN_CTR, BOLD_ON, FONT_LARGE);
         push(encode(settings.store_name || 'Twist & Roll'), cmd(LF));
         push(FONT_NORMAL, BOLD_OFF);
+        push(encode((settings.store_name || 'Twist & Roll').toUpperCase()), cmd(LF));
 
         if (settings.store_address) {
             push(encode(settings.store_address), cmd(LF));
@@ -113,83 +158,91 @@ const BluetoothPrinter = (function () {
         }
 
         push(ALIGN_LEFT);
-        push(encode(divider('=')), cmd(LF));
+        push(encode(divider('=', PAPER_WIDTH)), cmd(LF));
 
-        // ── Order meta ────────────────────────────────────────────────────
+        // ── Order meta (order type / payment type / date / beeper) ─────────
+        // No cashier name and no branch line — kept lean like the receipt
+        // preview in Profile settings.
         const now = new Date();
         const dateStr = now.toLocaleDateString('en-PH', {
-            month: 'short', day: 'numeric', year: 'numeric'
+            month: '2-digit', day: '2-digit', year: 'numeric'
         });
         const timeStr = now.toLocaleTimeString('en-PH', {
-            hour: 'numeric', minute: '2-digit', hour12: true
+            hour: '2-digit', minute: '2-digit', hour12: false
         });
-
-        push(encode(padLine('Date:', dateStr)), cmd(LF));
-        push(encode(padLine('Time:', timeStr)), cmd(LF));
 
         if (settings.show_order_type) {
             const typeLabel = order.order_type === 'dine-in' ? 'Dine In' : 'Take Out';
-            push(encode(padLine('Order Type:', typeLabel)), cmd(LF));
+            push(encode(padLine('Order Type:', typeLabel, PAPER_WIDTH)), cmd(LF));
         }
+        const payMethod = order.payment_method === 'cash' ? 'Cash' : 'GCash';
+        push(encode(padLine('Payment Type:', payMethod, PAPER_WIDTH)), cmd(LF));
+        push(encode(padLine('Date:', `${dateStr}  ${timeStr}`, PAPER_WIDTH)), cmd(LF));
+
         if (settings.show_beeper && order.beeper_number) {
-            push(encode(padLine('Beeper #:', String(order.beeper_number))), cmd(LF));
-        }
-        if (settings.show_cashier && settings.cashier_name) {
-            push(encode(padLine('Cashier:', settings.cashier_name)), cmd(LF));
+            push(BOLD_ON);
+            push(encode(padLine('Beeper #:', String(order.beeper_number), PAPER_WIDTH)), cmd(LF));
+            push(BOLD_OFF);
         }
 
-        push(encode(divider('-')), cmd(LF));
+        push(encode(divider('-', PAPER_WIDTH)), cmd(LF));
 
-        // ── Items ─────────────────────────────────────────────────────────
+        // ── Items (Item / Qty / Price columns) ──────────────────────────────
+        const COLS = [16, 6, 10]; // sums to PAPER_WIDTH (32)
+
         push(BOLD_ON);
-        push(encode(padLine('Item', 'Amount')), cmd(LF));
+        push(encode(padCols(['Item', 'Qty', 'Price'], COLS)), cmd(LF));
         push(BOLD_OFF);
-        push(encode(divider('-')), cmd(LF));
+        push(encode(divider('-', PAPER_WIDTH)), cmd(LF));
 
         for (const item of order.items) {
             const itemTotal = item.price * item.qty;
-            const nameLine  = `${item.qty}x ${item.name}`;
-            const amtLine   = `Php ${itemTotal.toLocaleString()}`;
-            // If name is too long, wrap it
-            if (nameLine.length + amtLine.length + 1 > 32) {
-                push(encode(nameLine.substring(0, 32)), cmd(LF));
-                push(encode(padLine('', amtLine)), cmd(LF));
+            const priceStr  = itemTotal.toLocaleString();
+            if (item.name.length > COLS[0]) {
+                push(encode(item.name.substring(0, PAPER_WIDTH)), cmd(LF));
+                push(encode(padCols(['', String(item.qty), priceStr], COLS)), cmd(LF));
             } else {
-                push(encode(padLine(nameLine, amtLine)), cmd(LF));
+                push(encode(padCols([item.name, String(item.qty), priceStr], COLS)), cmd(LF));
             }
         }
 
-        push(encode(divider('-')), cmd(LF));
+        push(encode(divider('-', PAPER_WIDTH)), cmd(LF));
 
         // ── Totals ────────────────────────────────────────────────────────
-        push(encode(padLine('Subtotal:', `Php ${order.subtotal.toLocaleString()}`)), cmd(LF));
+        push(encode(padLine('Subtotal', order.subtotal.toLocaleString(), PAPER_WIDTH)), cmd(LF));
 
         if (settings.show_discount && order.discount > 0) {
-            push(encode(padLine('Discount:', `-Php ${order.discount.toLocaleString()}`)), cmd(LF));
+            push(encode(padLine('Discount', `-${order.discount.toLocaleString()}`, PAPER_WIDTH)), cmd(LF));
         }
 
         push(BOLD_ON, FONT_MED);
-        push(encode(padLine('TOTAL:', `Php ${order.total.toFixed(2)}`)), cmd(LF));
+        push(encode(padLine('TOTAL', order.total.toFixed(0), PAPER_WIDTH)), cmd(LF));
         push(FONT_NORMAL, BOLD_OFF);
 
-        // Payment info
-        const payMethod = order.payment_method === 'cash' ? 'Cash' : 'GCash';
-        push(encode(padLine('Payment:', payMethod)), cmd(LF));
-
         if (order.payment_method === 'cash' && order.change_amount > 0) {
-            push(encode(padLine('Cash Paid:', `Php ${parseFloat(order.amount_paid).toLocaleString()}`)), cmd(LF));
-            push(encode(padLine('Change:', `Php ${parseFloat(order.change_amount).toFixed(2)}`)), cmd(LF));
+            push(encode(padLine('Cash Paid:', `Php ${parseFloat(order.amount_paid).toLocaleString()}`, PAPER_WIDTH)), cmd(LF));
+            push(encode(padLine('Change:', `Php ${parseFloat(order.change_amount).toFixed(2)}`, PAPER_WIDTH)), cmd(LF));
         }
         if (order.payment_method === 'gcash' && order.gcash_reference) {
-            push(encode(padLine('GCash Ref:', order.gcash_reference)), cmd(LF));
+            push(encode(padLine('GCash Ref:', order.gcash_reference, PAPER_WIDTH)), cmd(LF));
         }
 
-        push(encode(divider('=')), cmd(LF));
+        push(encode(divider('-', PAPER_WIDTH)), cmd(LF));
 
         // ── Footer ────────────────────────────────────────────────────────
-        push(ALIGN_CTR);
+        push(ALIGN_CTR, BOLD_ON);
+        push(encode('THANK YOU !!!'), cmd(LF));
+        push(BOLD_OFF);
         if (settings.receipt_footer) {
             push(encode(settings.receipt_footer), cmd(LF));
+        }
+        push(cmd(LF));
+
+        // ── QR code linking to the Facebook page ────────────────────────────
+        if (settings.fb_page_url) {
+            push(qrCode(settings.fb_page_url));
+            push(cmd(LF));
+            push(encode(`facebook page: ${settings.store_name || 'Twist & Roll'}`), cmd(LF));
         }
         push(cmd(LF));
 

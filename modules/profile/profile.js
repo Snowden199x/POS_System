@@ -305,7 +305,6 @@
     bindText("receipt_footer", "rp-footer");
 
     bindToggle("show_discount",   "rp-discount-row");
-    bindToggle("show_cashier",    "rp-cashier-row");
     bindToggle("show_order_type", "rp-order-type-row");
     bindToggle("show_beeper",     "rp-beeper-row");
   }
