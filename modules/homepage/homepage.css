@@ -171,7 +171,7 @@ body {
    ============================================= */
 .pos-layout {
     display: grid;
-    grid-template-columns: 1fr 360px;
+    grid-template-columns: 1fr 440px;
     gap: 0;
     flex: 1;
     min-height: 0;
@@ -309,14 +309,15 @@ body {
     -webkit-tap-highlight-color: transparent;
 }
 
-.order-type-card:hover  { transform: translateY(-3px); box-shadow: var(--shadow-md); }
-.order-type-card:active { transform: scale(0.98); }
-
-.order-type-card--dine-in {
+.order-type-card:hover,
+.order-type-card:active {
     background: var(--green-100);
     color: var(--white);
     border-color: var(--gold-100);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
 }
+.order-type-card:active { transform: scale(0.98); }
 
 .order-type-card__icon-wrap {
     width: clamp(44px, 4.5vw, 64px);
@@ -326,9 +327,11 @@ body {
     align-items: center;
     justify-content: center;
     background: var(--green-5);
+    transition: background 0.18s ease;
 }
 
-.order-type-card--dine-in .order-type-card__icon-wrap { background: var(--gold-100); }
+.order-type-card:hover .order-type-card__icon-wrap,
+.order-type-card:active .order-type-card__icon-wrap { background: var(--gold-100); }
 
 .order-type-card__icon {
     width: clamp(20px, 1.9vw, 28px);
@@ -345,10 +348,12 @@ body {
 .order-type-card__sub {
     font-size: clamp(11px, 1vw, 14px);
     font-weight: 500;
+    color: var(--text-muted);
+    transition: color 0.18s ease;
 }
 
-.order-type-card--dine-in .order-type-card__sub { color: var(--gold-100); opacity: 0.9; }
-.order-type-card--take-out .order-type-card__sub { color: var(--text-muted); }
+.order-type-card:hover .order-type-card__sub,
+.order-type-card:active .order-type-card__sub { color: var(--gold-100); opacity: 0.9; }
 
 /* Screen 3 — read-only order-type badge (replaces the old manual toggle;
    the type is already decided by whichever card was tapped on screen 2) */
@@ -956,7 +961,11 @@ body {
 }
 
 .change-display__label { color: var(--text-muted); font-weight: 500; }
-.change-display__amount { color: var(--gold-100); font-weight: 700; }
+.change-display__amount {
+    color: var(--green-100);
+    font-weight: 800;
+    font-size: clamp(16px, 1.8vw, 28px);
+}
 
 /* Place Order Button */
 .place-order-btn {

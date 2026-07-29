@@ -40,22 +40,21 @@ $year_range = range(2026, 2036);
 
 // ══════════════════════════════════════════════════════════════════════════
 //  BUSINESS DAY LOGIC
-//  Business day runs 5:00 PM – 2:00 AM (next calendar day)
-//  SQL:  DATE(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 17 HOUR)
-//  Maps  17:00 PHT → 00:00 (same date)  ✓
-//        01:59 PHT → day-1 08:59        ✓  (still previous business day)
-//        02:00 PHT → day   09:00        ✓  (new business day starts)
+//  Business day resets every day at 5:00 AM
+//  SQL:  DATE(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 5 HOUR)
+//  Maps  05:00 PHT → same date              ✓  (new business day starts)
+//        04:59 PHT → previous date          ✓  (still previous business day)
 // ══════════════════════════════════════════════════════════════════════════
 date_default_timezone_set('Asia/Manila');
 
-$BIZ_DATE  = "DATE(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 17 HOUR)";
-$BIZ_YEAR  = "YEAR(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 17 HOUR)";
-$BIZ_MONTH = "MONTH(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 17 HOUR)";
+$BIZ_DATE  = "DATE(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 5 HOUR)";
+$BIZ_YEAR  = "YEAR(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 5 HOUR)";
+$BIZ_MONTH = "MONTH(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 5 HOUR)";
 // ── Branch SQL helpers ────────────────────────────────────────────────────
 // Current business date on PHP side
 $now_pht = new DateTime('now', new DateTimeZone('Asia/Manila'));
-if ((int)$now_pht->format('H') < 2) {
-    // Before 2 AM — still the previous business day
+if ((int)$now_pht->format('H') < 5) {
+    // Before 5 AM — still the previous business day
     $now_pht->modify('-1 day');
 }
 $today = $now_pht->format('Y-m-d');
@@ -114,14 +113,14 @@ $daily_data = $daily_stmt->fetchAll();
 
 $weekly_stmt = $pdo->prepare("
     SELECT
-        YEARWEEK(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 17 HOUR, 1) as yw,
+        YEARWEEK(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 5 HOUR, 1) as yw,
         MIN($BIZ_DATE) as week_start,
         MAX($BIZ_DATE) as week_end,
         COALESCE(SUM(total),0) as total_sales,
         COUNT(*) as order_count
     FROM orders
     WHERE status IN ('pending','served') $BRANCH_ONLY
-    GROUP BY YEARWEEK(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 17 HOUR, 1)
+    GROUP BY YEARWEEK(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 5 HOUR, 1)
     ORDER BY yw DESC LIMIT 5
 ");
 $weekly_stmt->execute();
@@ -573,7 +572,7 @@ $bar_json     = json_encode($bar_data);
             <div class="dash-box">
                 <div class="dash-box__header">
                     <img src="<?= $base_url ?>assets/images/best_icon.png" alt="" class="dash-box__header-icon">
-                    <h3>Best Selling Menu</h3>
+                    <h3>Best Selling Menu (<?= $months_list[$selected_month] ?>)</h3>
                 </div>
                 <div class="rank-list">
                     <?php if (empty($best_items)): ?><p class="no-data">No data yet.</p>
@@ -594,7 +593,7 @@ $bar_json     = json_encode($bar_data);
             <div class="dash-box">
                 <div class="dash-box__header">
                     <img src="<?= $base_url ?>assets/images/least_icon.png" alt="" class="dash-box__header-icon">
-                    <h3>Least Selling Menu</h3>
+                    <h3>Least Selling Menu (<?= $months_list[$selected_month] ?>)</h3>
                 </div>
                 <div class="rank-list">
                     <?php if (empty($least_items)): ?><p class="no-data">No data yet.</p>

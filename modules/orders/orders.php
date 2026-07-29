@@ -167,7 +167,7 @@ foreach ($disc_stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         <div class="order-card" data-id="<?= $o['id'] ?>" data-type="<?= htmlspecialchars($type) ?>">
             <div class="order-top">
                 <div class="order-top-left">
-                    <span class="order-id" data-beeper="<?= $o['beeper_number'] ?>">#<?= $o['beeper_number'] ?></span>
+                    <span class="order-id" data-beeper="<?= $o['beeper_number'] ?>">Beeper #<?= $o['beeper_number'] ?></span>
                 </div>
                 <div class="order-top-right">
                     <span class="badge <?= $badgeClass ?>"><?= $typeLabel ?></span>

@@ -583,13 +583,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </label>
                         </label>
                         <label class="receipt-toggle-row">
-                            <span class="receipt-toggle-label">Cashier name</span>
-                            <label class="toggle-switch">
-                                <input type="checkbox" name="show_cashier" <?= $receipt['show_cashier'] ? 'checked' : '' ?>>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </label>
-                        <label class="receipt-toggle-row">
                             <span class="receipt-toggle-label">Order type (Dine in / Take out)</span>
                             <label class="toggle-switch">
                                 <input type="checkbox" name="show_order_type" <?= $receipt['show_order_type'] ? 'checked' : '' ?>>
@@ -633,10 +626,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="rp-divider"></div>
                         <div class="rp-info-row">
                             <div class="rp-info-col">
-                                <div>STORE: MAIN BRANCH</div>
                                 <div id="rp-order-type-row" style="<?= $receipt['show_order_type'] ? '' : 'display:none' ?>">ORDER TYPE: DINE IN</div>
                                 <div>PAYMENT TYPE: CASH</div>
-                                <div id="rp-cashier-row" style="<?= $receipt['show_cashier'] ? '' : 'display:none' ?>">CASHIER: <?= htmlspecialchars(strtoupper($user['full_name'])) ?></div>
                             </div>
                             <div class="rp-info-col rp-info-col--right">
                                 <div>MM - DD - YYYY&nbsp;&nbsp;&nbsp;00:00</div>

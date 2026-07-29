@@ -22,9 +22,9 @@ if (
     // ══════════════════════════════════════════════════════════════════════
     //  BUSINESS DAY HELPERS  (5 PM – 2 AM)
     // ══════════════════════════════════════════════════════════════════════
-    $BIZ_DATE  = "DATE(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 17 HOUR)";
-    $BIZ_YEAR  = "YEAR(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 17 HOUR)";
-    $BIZ_MONTH = "MONTH(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 17 HOUR)";
+    $BIZ_DATE  = "DATE(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 5 HOUR)";
+    $BIZ_YEAR  = "YEAR(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 5 HOUR)";
+    $BIZ_MONTH = "MONTH(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 5 HOUR)";
 
     // ── Branch / merge ────────────────────────────────────────────────────
     $branch_id = (int)($_SESSION['user_id'] ?? 1);
@@ -176,7 +176,7 @@ if (
         }
         $s = $pdo->prepare("
             SELECT
-                YEARWEEK(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 17 HOUR, 1) AS yw,
+                YEARWEEK(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 5 HOUR, 1) AS yw,
                 MIN($BIZ_DATE) AS week_start,
                 MAX($BIZ_DATE) AS week_end,
                 COUNT(*) AS total_orders,
@@ -186,7 +186,7 @@ if (
                 COALESCE(SUM(CASE WHEN status='served' THEN discount ELSE 0 END),0) AS total_discounts
             FROM orders
             WHERE $wWhere AND status IN ('served','voided')
-            GROUP BY YEARWEEK(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 17 HOUR, 1)
+            GROUP BY YEARWEEK(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 5 HOUR, 1)
             ORDER BY yw ASC
         ");
         $s->execute($wParams);
