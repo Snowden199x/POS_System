@@ -241,6 +241,8 @@ foreach ($disc_stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         <?php endforeach; ?>
         <?php endif; ?>
     </div>
+
+    <div class="orders-pagination" id="orders-pagination"></div>
 </div>
 
 <!-- EDIT MODAL — unchanged from original -->
