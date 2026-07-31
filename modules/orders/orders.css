@@ -3,9 +3,10 @@
    ============================================= */
 
 .orders-page {
-    padding: 28px 36px;
+    padding: clamp(14px, 2vw, 22px) clamp(16px, 2.4vw, 28px);
     background: var(--cream);
-    height: calc(100vh - 110px);
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
 }
 
@@ -14,9 +15,9 @@
 .orders-page::-webkit-scrollbar-thumb { background: var(--border-dark); border-radius: 4px; }
 
 .orders-title {
-    font-size: 30px;
+    font-size: clamp(20px, 2.1vw, 28px);
     font-weight: 700;
-    margin-bottom: 20px;
+    margin-bottom: 14px;
     color: var(--green-100);
 }
 
@@ -24,7 +25,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 28px;
+    margin-bottom: 18px;
     gap: 16px;
     flex-wrap: wrap;
 }
@@ -32,19 +33,19 @@
 /* SEARCH */
 .orders-search-wrapper {
     position: relative;
-    width: 520px;
-    max-width: 100%;
+    width: min(520px, 100%);
+    flex: 1 1 260px;
 }
 
 .orders-search {
     width: 100%;
-    height: 44px;
-    padding: 0 20px 0 46px;
+    height: clamp(38px, 3.4vw, 44px);
+    padding: 0 18px 0 44px;
     border-radius: 999px;
     border: 1.5px solid var(--gold-100);
     background: transparent;
     font-family: 'Poppins', sans-serif;
-    font-size: 14px;
+    font-size: clamp(12.5px, 1vw, 14px);
     color: var(--green-100);
     outline: none;
     transition: border-color 0.18s;
@@ -65,21 +66,22 @@
 /* FILTER */
 .orders-filters {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
 }
 
 .filter {
-    padding: 8px 20px;
+    padding: clamp(6px, 0.6vw, 8px) clamp(14px, 1.4vw, 20px);
     border-radius: 999px;
     border: 1.5px solid var(--gold-100);
     background: transparent;
     color: var(--green-100);
     font-family: 'Poppins', sans-serif;
-    font-size: 13.5px;
+    font-size: clamp(12px, 0.95vw, 13.5px);
     font-weight: 500;
     cursor: pointer;
     transition: all 0.18s;
+    white-space: nowrap;
 }
 
 .filter.active {
@@ -93,11 +95,12 @@
     color: var(--green-100);
 }
 
-/* GRID */
+/* GRID — auto-fit adapts column count to available width continuously,
+   instead of jumping at fixed breakpoints */
 .orders-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(clamp(220px, 21vw, 280px), 1fr));
+    gap: clamp(10px, 1.2vw, 16px);
 }
 
 /* EMPTY STATE */
@@ -109,11 +112,52 @@
     font-size: 15px;
 }
 
+/* PAGINATION */
+.orders-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 22px;
+    flex-wrap: wrap;
+}
+
+.page-btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1.5px solid var(--gold-100);
+    background: transparent;
+    color: var(--green-100);
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+}
+
+.page-btn:hover:not(:disabled):not(.active) {
+    border-color: var(--green-100);
+    background: rgba(28,57,36,0.06);
+}
+
+.page-btn.active {
+    background: var(--green-100);
+    color: var(--white);
+    border-color: var(--green-100);
+}
+
+.page-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
 /* CARD */
 .order-card {
     background: var(--cream);
-    border-radius: 22px;
-    padding: 18px;
+    border-radius: clamp(16px, 1.6vw, 22px);
+    padding: clamp(10px, 1vw, 14px);
     border: 1.5px solid var(--gold-100);
     box-shadow: 0px 4px 8.9px 0px rgba(216, 195, 111, 0.32);
     transition: transform 0.18s, box-shadow 0.18s;
@@ -131,20 +175,21 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .order-id {
-    font-size: 22px;
+    font-size: clamp(13px, 1.2vw, 18px);
     font-weight: 800;
     color: #8B1A1A;
 }
 
 .badge {
-    padding: 4px 12px;
+    padding: clamp(3px, 0.4vw, 4px) clamp(8px, 1vw, 12px);
     border-radius: 999px;
-    font-size: 11.5px;
+    font-size: clamp(10px, 0.85vw, 11.5px);
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .badge.dine {
@@ -161,44 +206,48 @@
 /* ITEMS */
 .order-items {
     flex: 1;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .order-row {
     display: flex;
     justify-content: space-between;
-    margin: 5px 0;
-    font-size: 13px;
+    margin: 4px 0;
+    font-size: clamp(11.5px, 0.95vw, 13px);
     color: var(--green-100);
     font-weight: 500;
+    gap: 8px;
 }
 
 .order-row span:last-child {
     font-weight: 600;
     color: var(--gold-100);
+    flex-shrink: 0;
 }
 
 /* DIVIDER */
 .divider {
     height: 1px;
     background: var(--border);
-    margin: 10px 0;
+    margin: 8px 0;
 }
 
 /* EXTRA INFO */
-.order-extra { margin-bottom: 8px; }
+.order-extra { margin-bottom: 6px; }
 
 .extra-row {
     display: flex;
     justify-content: space-between;
-    font-size: 12px;
+    font-size: clamp(10.5px, 0.85vw, 12px);
     color: var(--text-muted);
-    margin: 3px 0;
+    margin: 2px 0;
+    gap: 8px;
 }
 
 .extra-row span:last-child {
     font-weight: 500;
     color: var(--text-primary);
+    text-align: right;
 }
 
 /* BOTTOM */
@@ -210,18 +259,18 @@
 }
 
 .order-bottom strong {
-    font-size: 14px;
+    font-size: clamp(12.5px, 1vw, 14px);
     color: var(--text-primary);
 }
 
 .time {
-    font-size: 11px;
+    font-size: clamp(10px, 0.8vw, 11px);
     color: var(--text-light);
     margin-top: 2px;
 }
 
 .price {
-    font-size: 17px;
+    font-size: clamp(14px, 1.3vw, 17px);
     font-weight: 700;
     color: var(--gold-100);
 }
@@ -229,14 +278,14 @@
 /* SERVE BUTTON */
 .serve-btn {
     width: 100%;
-    margin-top: 12px;
-    padding: 11px;
+    margin-top: 10px;
+    padding: clamp(7px, 0.7vw, 9px);
     border: none;
     border-radius: 999px;
     background: var(--green-100);
     color: var(--white);
     font-family: 'Poppins', sans-serif;
-    font-size: 13.5px;
+    font-size: clamp(12px, 1vw, 13.5px);
     font-weight: 600;
     cursor: pointer;
     transition: background 0.18s, transform 0.15s;
@@ -367,7 +416,7 @@
 .delete-box {
     background: var(--cream);
     border-radius: 28px;
-    padding: 36px 32px;
+    padding: clamp(24px, 3vw, 36px) clamp(20px, 2.6vw, 32px);
     width: 100%;
     max-width: 420px;
     display: flex;
@@ -391,7 +440,7 @@
 }
 
 .delete-box h3 {
-    font-size: 24px;
+    font-size: clamp(20px, 2vw, 24px);
     font-weight: 700;
     color: var(--green-100);
     margin: 0;
@@ -457,8 +506,8 @@
     max-height: 92vh;
     overflow-y: auto;
     background: var(--cream);
-    border-radius: 40px;
-    padding: 24px;
+    border-radius: clamp(24px, 3.4vw, 40px);
+    padding: clamp(16px, 2vw, 24px);
     box-shadow: 0px 0px 49.6px -18px rgba(0,0,0,0.25);
     animation: modalPop .2s ease;
     display: flex;
@@ -478,7 +527,7 @@
 }
 
 .epm-header h2 {
-    font-size: 28px;
+    font-size: clamp(22px, 2.4vw, 28px);
     font-weight: 700;
     color: var(--green-100);
     margin-bottom: 2px;
@@ -634,26 +683,20 @@
 
 /* =============================================
    RESPONSIVE
-============================================= */
+   Grid/typography above is already fluid via clamp()
+   and auto-fill — these just handle layout shape,
+   not sizing.
+   ============================================= */
 
-@media (max-width: 1100px) {
-    .orders-grid { grid-template-columns: repeat(3, 1fr); }
-}
-
-@media (max-width: 800px) {
-    .orders-grid { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 820px) {
+    .orders-controls { flex-direction: column; align-items: stretch; gap: 12px; }
     .orders-search-wrapper { width: 100%; }
-    .orders-controls { flex-direction: column; align-items: flex-start; }
+    .orders-filters { width: 100%; }
+    .filter { flex: 1; text-align: center; }
 }
 
-@media (max-width: 500px) {
+@media (max-width: 480px) {
     .orders-grid { grid-template-columns: 1fr; }
-    .orders-page { padding: 16px; }
-    .edit-panel-modal {
-        border-radius: 28px;
-        padding: 18px;
-    }
-    .epm-picker-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
+    .edit-panel-modal { padding: 16px; }
+    .epm-picker-grid { grid-template-columns: repeat(3, 1fr); }
 }

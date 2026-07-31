@@ -1,25 +1,110 @@
 (function () {
     'use strict';
 
-    // ── FILTER ─────────────────────────────────────────────
+    // ── STATE ──────────────────────────────────────────────
     let currentFilter = 'all';
+    let currentSearch  = '';
+    let currentPage    = 1;
 
-    function filterOrders(type, el) {
-        currentFilter = type;
-        document.querySelectorAll('.filter').forEach(btn => btn.classList.remove('active'));
-        if (el) el.classList.add('active');
-        const val = searchInput ? searchInput.value.trim() : '';
-        let visible = 0;
-        document.querySelectorAll('.order-card').forEach(card => {
+    // ── HELPERS ────────────────────────────────────────────
+    function getAllCards() {
+        return Array.from(document.querySelectorAll('#orders-grid .order-card'));
+    }
+
+    function getFilteredCards() {
+        const val = currentSearch;
+        return getAllCards().filter(card => {
             const beeper = (card.querySelector('.order-id')?.dataset.beeper || '').trim();
             const items  = Array.from(card.querySelectorAll('.order-row span:first-child'))
                 .map(el => el.textContent.toLowerCase().replace(/^\d+x\s*/i, '')).join(' ');
-            const match = (currentFilter === 'all' || card.dataset.type === currentFilter)
-                       && (val === '' || beeper === val || items.includes(val.toLowerCase()));
-            card.style.display = match ? 'flex' : 'none';
-            if (match) visible++;
+            return (currentFilter === 'all' || card.dataset.type === currentFilter)
+                && (val === '' || beeper === val || items.includes(val));
         });
-        showEmpty(visible === 0);
+    }
+
+    // Reads the *actual* rendered column count from the grid so pagination
+    // stays correct across laptop / tablet landscape / tablet portrait —
+    // the grid uses auto-fill, so column count isn't fixed.
+    function getColumnsCount() {
+        const grid = document.getElementById('orders-grid');
+        if (!grid) return 1;
+        const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length;
+        return cols || 1;
+    }
+
+    // ── PAGINATION ─────────────────────────────────────────
+    function renderPagination(totalItems, itemsPerPage) {
+        const pagWrap = document.getElementById('orders-pagination');
+        if (!pagWrap) return;
+
+        const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        if (totalItems === 0 || totalPages <= 1) {
+            pagWrap.innerHTML = '';
+            pagWrap.style.display = 'none';
+            return;
+        }
+        pagWrap.style.display = 'flex';
+
+        let html = `<button class="page-btn page-nav" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>&#8592;</button>`;
+        for (let i = 1; i <= totalPages; i++) {
+            html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+        }
+        html += `<button class="page-btn page-nav" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>&#8594;</button>`;
+        pagWrap.innerHTML = html;
+
+        pagWrap.querySelectorAll('.page-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                if (this.disabled) return;
+                const p = parseInt(this.dataset.page);
+                if (!p || p < 1 || p > totalPages) return;
+                currentPage = p;
+                applyPagination();
+                document.querySelector('.orders-page').scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        });
+    }
+
+    function applyPagination() {
+        const all      = getAllCards();
+        const filtered = getFilteredCards();
+        const cols     = getColumnsCount();
+        const itemsPerPage = cols * 2; // max 2 rows per page
+
+        all.forEach(c => { c.style.display = 'none'; });
+
+        if (filtered.length === 0) {
+            showEmpty(true);
+            renderPagination(0, itemsPerPage);
+            return;
+        }
+        showEmpty(false);
+
+        const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const start = (currentPage - 1) * itemsPerPage;
+        filtered.slice(start, start + itemsPerPage).forEach(c => { c.style.display = 'flex'; });
+
+        renderPagination(filtered.length, itemsPerPage);
+    }
+    window.applyPagination = applyPagination;
+
+    // Recompute on resize/rotation — column count can change
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(applyPagination, 150);
+    });
+
+    // ── FILTER ─────────────────────────────────────────────
+    function filterOrders(type, el) {
+        currentFilter = type;
+        currentPage = 1;
+        document.querySelectorAll('.filter').forEach(btn => btn.classList.remove('active'));
+        if (el) el.classList.add('active');
+        applyPagination();
     }
     window.filterOrders = filterOrders;
 
@@ -37,7 +122,7 @@
             if (data.success) {
                 card.style.transition = 'opacity 0.3s, transform 0.3s';
                 card.style.opacity = '0'; card.style.transform = 'scale(0.95)';
-                setTimeout(() => { card.remove(); showEmpty(document.querySelectorAll('.order-card').length === 0); }, 300);
+                setTimeout(() => { card.remove(); applyPagination(); }, 300);
             } else {
                 btn.disabled = false; btn.textContent = 'Mark as served';
                 alert('Failed: ' + (data.message || 'Unknown error'));
@@ -62,18 +147,9 @@
     const searchInput = document.getElementById('orderSearch');
     if (searchInput) {
         searchInput.addEventListener('input', function () {
-            const val = this.value.trim().toLowerCase();
-            let visible = 0;
-            document.querySelectorAll('.order-card').forEach(card => {
-                const beeper = (card.querySelector('.order-id')?.dataset.beeper || '').trim();
-                const items  = Array.from(card.querySelectorAll('.order-row span:first-child'))
-                    .map(el => el.textContent.toLowerCase().replace(/^\d+x\s*/i, '')).join(' ');
-                const match = (currentFilter === 'all' || card.dataset.type === currentFilter)
-                           && (val === '' || beeper === val || items.includes(val));
-                card.style.display = match ? 'flex' : 'none';
-                if (match) visible++;
-            });
-            showEmpty(visible === 0);
+            currentSearch = this.value.trim().toLowerCase();
+            currentPage = 1;
+            applyPagination();
         });
     }
 
@@ -360,7 +436,6 @@
     }
 
     // ── GCASH DIFF MODAL ───────────────────────────────────
-    // Shows when GCash order and total has changed
     function showGcashDiffModal(newTotal, diff, origTotal, origRef, onConfirm) {
         if (document.getElementById('gcash-diff-overlay')) return;
         const isAddition = diff > 0;
@@ -436,7 +511,6 @@
 
         document.body.appendChild(overlay);
 
-        // Strip non-digits and enforce 13 digits
         const extraRefInput = document.getElementById('gcash-extra-ref-input');
         if (extraRefInput) {
             extraRefInput.addEventListener('input', () => {
@@ -447,7 +521,6 @@
         document.getElementById('gcash-diff-confirm').addEventListener('click', () => {
             const refInput = document.getElementById('gcash-extra-ref-input');
             if (refInput) {
-                // Strip non-digits
                 refInput.value = refInput.value.replace(/\D/g, '').slice(0, 13);
             }
             if (isAddition && refInput && refInput.value.replace(/\D/g,'').length !== 13) {
@@ -486,7 +559,6 @@
         const isGcash = epm.paymentMethod === 'gcash';
         const diff    = total - originalTotal;
 
-        // GCash with price change — show the extra modal
         if (isGcash && Math.abs(diff) >= 1) {
             closeEditModal();
             showGcashDiffModal(total, diff, originalTotal, epm.originalGcashRef, (extraRef, extraAmount, refundAmt) => {
@@ -495,7 +567,6 @@
             return;
         }
 
-        // Cash or no price change
         submitEditOrder({ subtotal, disc, total, beeper, gcashExtraRef: null, gcashExtraAmount: 0, refundAmount: 0 });
     });
 
@@ -537,7 +608,7 @@
                     if (card) {
                         card.style.transition = 'opacity 0.3s, transform 0.3s';
                         card.style.opacity = '0'; card.style.transform = 'scale(0.95)';
-                        setTimeout(() => { card.remove(); showEmpty(document.querySelectorAll('.order-card').length === 0); }, 300);
+                        setTimeout(() => { card.remove(); applyPagination(); }, 300);
                     }
                 } else {
                     alert('Failed to void: ' + (data.message || 'Unknown error'));
@@ -560,5 +631,8 @@
         if (dateEl) dateEl.textContent = `${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()} at ${h}:${m} ${ampm}`;
     }
     updateClock(); setInterval(updateClock, 1000);
+
+    // ── INITIAL PAGINATION ─────────────────────────────────
+    applyPagination();
 
 })();
