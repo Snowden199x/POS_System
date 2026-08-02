@@ -12,7 +12,7 @@ body {
 .profile-page {
     max-width: 1100px;
     margin: 0 auto;
-    padding: 28px 28px 60px;
+    padding: clamp(16px, 2vw, 28px) clamp(16px, 2vw, 28px) clamp(30px, 4vw, 60px);
     font-family: 'Poppins', sans-serif;
 }
 
@@ -21,7 +21,7 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
+    font-size: clamp(9px, 0.93vw, 15.3px);
     color: var(--text-muted);
     margin-bottom: 10px;
 }
@@ -39,7 +39,7 @@ body {
 
 /* ── PAGE TITLE ───────────────────────────── */
 .profile-page__title {
-    font-size: 26px;
+    font-size: clamp(19px, 1.86vw, 30.7px);
     font-weight: 700;
     color: var(--green-100);
     margin-bottom: 4px;
@@ -47,7 +47,7 @@ body {
 }
 
 .profile-page__sub {
-    font-size: 13px;
+    font-size: clamp(9px, 0.93vw, 15.3px);
     color: var(--text-muted);
     margin-bottom: 24px;
 }
@@ -72,7 +72,7 @@ body {
     gap: 8px;
     padding: 13px 20px;
     border-radius: 10px;
-    font-size: 13px;
+    font-size: clamp(9px, 0.93vw, 15.3px);
     font-weight: 500;
     box-shadow: var(--shadow-md);
     pointer-events: auto;
@@ -115,7 +115,7 @@ body {
     background: #ffffff;
     border: 1px solid rgba(216, 195, 111, 0.20);
     border-radius: 16px;
-    padding: 22px 24px;
+    padding: clamp(16px, 1.7vw, 22px) clamp(16px, 1.8vw, 24px);
     margin-bottom: 18px;
 }
 
@@ -146,7 +146,7 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 15px;
+    font-size: clamp(11px, 1.07vw, 17.7px);
     font-weight: 600;
     color: var(--green-100);
 }
@@ -201,7 +201,7 @@ body {
 .avatar-cam-btn:hover { background: #2e5c38; }
 
 .avatar-name {
-    font-size: 17px;
+    font-size: clamp(12px, 1.21vw, 20.1px);
     font-weight: 700;
     color: var(--green-100);
     margin-bottom: 18px;
@@ -220,7 +220,7 @@ body {
     background: #C99813;
     color: #fff;
     font-family: 'Poppins', sans-serif;
-    font-size: 13.5px;
+    font-size: clamp(10px, 0.96vw, 15.9px);
     font-weight: 600;
     cursor: pointer;
     margin-bottom: 10px;
@@ -240,7 +240,7 @@ body {
     background: transparent;
     color: var(--green-100);
     font-family: 'Poppins', sans-serif;
-    font-size: 13.5px;
+    font-size: clamp(10px, 0.96vw, 15.9px);
     font-weight: 600;
     cursor: pointer;
     transition: background 0.15s;
@@ -258,7 +258,7 @@ body {
     background: transparent;
     color: var(--green-100);
     font-family: 'Poppins', sans-serif;
-    font-size: 12.5px;
+    font-size: clamp(9px, 0.89vw, 14.8px);
     font-weight: 600;
     cursor: pointer;
     transition: background 0.15s;
@@ -284,13 +284,13 @@ body {
 }
 
 .profile-field__label {
-    font-size: 11.5px;
+    font-size: clamp(9px, 0.82vw, 13.6px);
     font-weight: 600;
     color: var(--text-muted);
 }
 
 .profile-field__value {
-    font-size: 13.5px;
+    font-size: clamp(10px, 0.96vw, 15.9px);
     font-weight: 500;
     color: var(--green-100);
     background: #FFFDEC;
@@ -304,7 +304,7 @@ body {
 
 .profile-input {
     font-family: 'Poppins', sans-serif;
-    font-size: 13.5px;
+    font-size: clamp(10px, 0.96vw, 15.9px);
     color: var(--green-100);
     background: #FFFDEC;
     border: 1.5px solid rgba(216, 195, 111, 0.35);
@@ -324,7 +324,7 @@ body {
 
 /* ── STATUS BADGE ─────────────────────────── */
 .profile-status {
-    font-size: 12.5px;
+    font-size: clamp(9px, 0.89vw, 14.8px);
     font-weight: 600;
     padding: 3px 10px;
     border-radius: 999px;
@@ -359,7 +359,7 @@ body {
     background: #C99813;
     color: #fff;
     font-family: 'Poppins', sans-serif;
-    font-size: 13.5px;
+    font-size: clamp(10px, 0.96vw, 15.9px);
     font-weight: 600;
     cursor: pointer;
     transition: background 0.15s, opacity 0.15s;
@@ -418,7 +418,7 @@ body {
     display: flex;
     align-items: center;
     gap: 5px;
-    font-size: 11px;
+    font-size: clamp(9px, 0.79vw, 13px);
     font-weight: 500;
     color: #c0392b;
     transition: color 0.18s;
@@ -426,7 +426,7 @@ body {
 }
 
 .pw-req__icon {
-    font-size: 11px;
+    font-size: clamp(9px, 0.79vw, 13px);
     font-weight: 700;
     flex-shrink: 0;
 }
@@ -440,7 +440,7 @@ body {
     align-items: center;
     gap: 6px;
     margin-top: 6px;
-    font-size: 11px;
+    font-size: clamp(9px, 0.79vw, 13px);
     font-weight: 600;
     padding: 5px 10px;
     border-radius: 7px;
@@ -449,7 +449,7 @@ body {
 .pw-match--ok  { color: #1c6b38; background: #e8f4ec; border: 1px solid #b0ddbf; }
 .pw-match--err { color: #c0392b; background: #fdecea; border: 1px solid #f5b7b1; }
 
-.pw-match .pw-req__icon { font-size: 11px; font-weight: 700; }
+.pw-match .pw-req__icon { font-size: clamp(9px, 0.79vw, 13px); font-weight: 700; }
 
 /* ── DANGER ZONE ──────────────────────────── */
 .danger-row {
@@ -460,7 +460,7 @@ body {
 }
 
 .danger-desc {
-    font-size: 13px;
+    font-size: clamp(9px, 0.93vw, 15.3px);
     color: var(--text-muted);
 }
 
@@ -474,7 +474,7 @@ body {
     background: transparent;
     color: #c0392b;
     font-family: 'Poppins', sans-serif;
-    font-size: 13.5px;
+    font-size: clamp(10px, 0.96vw, 15.9px);
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
@@ -490,7 +490,7 @@ body {
 
 /* Section label inside the receipt card */
 .receipt-section-label {
-    font-size: 11.5px;
+    font-size: clamp(9px, 0.82vw, 13.6px);
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -511,7 +511,7 @@ body {
 .label-optional {
     font-weight: 400;
     color: var(--text-light);
-    font-size: 11px;
+    font-size: clamp(9px, 0.79vw, 13px);
 }
 
 /* Show/hide toggle rows */
@@ -538,7 +538,7 @@ body {
 }
 
 .receipt-toggle-label {
-    font-size: 13px;
+    font-size: clamp(9px, 0.93vw, 15.3px);
     font-weight: 500;
     color: var(--green-100);
 }
@@ -553,14 +553,14 @@ body {
     max-width: 300px;
     margin: 0 auto;
     font-family: 'Unbounded', sans-serif;
-    font-size: 10px;
+    font-size: clamp(9px, 0.71vw, 11.8px);
     color: #1a1a1a;
     line-height: 1.7;
     letter-spacing: 0.02em;
 }
 
 .rp-storename {
-    font-size: 12px;
+    font-size: clamp(9px, 0.86vw, 14.2px);
     font-weight: 600;
     text-align: center;
     letter-spacing: 0.05em;
@@ -591,7 +591,7 @@ body {
 }
 
 .rp-fb-caption {
-    font-size: 9px;
+    font-size: clamp(9px, 0.64vw, 10.6px);
     text-transform: none;
 }
 
@@ -630,7 +630,7 @@ body {
 
 .rp-line {
     text-align: center;
-    font-size: 9px;
+    font-size: clamp(9px, 0.64vw, 10.6px);
     color: #444;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -643,7 +643,7 @@ body {
 .rp-header {
     text-align: center;
     font-weight: 500;
-    font-size: 9.5px;
+    font-size: clamp(9px, 0.68vw, 11.2px);
     margin-top: 4px;
 }
 
@@ -656,7 +656,7 @@ body {
     display: flex;
     justify-content: space-between;
     gap: 10px;
-    font-size: 8.5px;
+    font-size: clamp(9px, 0.61vw, 10px);
     color: #1a1a1a;
 }
 
@@ -675,7 +675,7 @@ body {
     display: flex;
     justify-content: space-between;
     gap: 6px;
-    font-size: 9.5px;
+    font-size: clamp(9px, 0.68vw, 11.2px);
     padding: 2px 0;
 }
 
@@ -690,7 +690,7 @@ body {
 
 .rp-col-headers {
     font-weight: 600;
-    font-size: 9px;
+    font-size: clamp(9px, 0.64vw, 10.6px);
     letter-spacing: 0.06em;
 }
 
@@ -705,21 +705,21 @@ body {
 
 .rp-total {
     font-weight: 700;
-    font-size: 11px;
+    font-size: clamp(9px, 0.79vw, 13px);
     margin-top: 4px;
 }
 
 .rp-thankyou {
     text-align: center;
     font-weight: 700;
-    font-size: 11px;
+    font-size: clamp(9px, 0.79vw, 13px);
     letter-spacing: 0.05em;
     margin-top: 2px;
 }
 
 .rp-footer {
     text-align: center;
-    font-size: 9px;
+    font-size: clamp(9px, 0.64vw, 10.6px);
     color: #555;
     margin-top: 4px;
     line-height: 1.5;
