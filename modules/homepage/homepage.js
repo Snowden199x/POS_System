@@ -400,6 +400,8 @@
         navRight.insertBefore(btn, profileMenu);
 
         btn.addEventListener('click', handlePrinterBtnClick);
+        btn.addEventListener('contextmenu', handlePrinterBtnRightClick);
+        btn.title += ' (right-click to switch printers)';
     }
 
     function updatePrinterBtn(connected) {
@@ -414,6 +416,31 @@
             btn.className = 'printer-status-btn printer-status-btn--disconnected';
             btn.title     = 'Connect receipt printer';
             if (label) label.textContent = 'Printer';
+        }
+    }
+
+    async function handlePrinterBtnRightClick(e) {
+        e.preventDefault();
+        if (typeof BluetoothPrinter === 'undefined') return;
+
+        if (BluetoothPrinter.isConnected()) {
+            BluetoothPrinter.disconnect();
+            updatePrinterBtn(false);
+        }
+        BluetoothPrinter.forgetDevice();
+        showToast('Forgot saved printer — pick a new one.', 'success');
+
+        const btn = document.getElementById('printer-status-btn');
+        if (btn) btn.style.opacity = '0.5';
+        try {
+            await BluetoothPrinter.connect();
+            updatePrinterBtn(true);
+            showToast('Printer connected!', 'success');
+        } catch (err) {
+            showToast('Printer: ' + err.message, 'error');
+            updatePrinterBtn(false);
+        } finally {
+            if (btn) btn.style.opacity = '';
         }
     }
 

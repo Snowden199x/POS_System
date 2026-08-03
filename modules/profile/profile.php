@@ -29,11 +29,11 @@ $receipt = $rs_stmt->fetch(PDO::FETCH_ASSOC);
 if (!$receipt) {
     $pdo->exec("
         INSERT INTO receipt_settings
-            (id, store_name, store_address, store_contact,
+            (id, store_name, store_address,
              receipt_header, receipt_footer,
-             show_discount, show_cashier, show_order_type, show_beeper)
+             show_discount, show_order_type, show_payment_type, show_beeper)
         VALUES
-            (1, 'Twist & Roll', '', '',
+            (1, 'Twist & Roll', '',
              '', 'Thank you for dining with us!',
              1, 1, 1, 1)
     ");
@@ -141,43 +141,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ── Save Receipt Settings ──────────────────────────────────────────────
     if (isset($_POST['action']) && $_POST['action'] === 'save_receipt') {
         $store_address   = trim($_POST['store_address']   ?? '');
-        $store_contact   = trim($_POST['store_contact']   ?? '');
         $fb_page_url     = trim($_POST['fb_page_url']      ?? '');
         $receipt_header  = trim($_POST['receipt_header']  ?? '');
         $receipt_footer  = trim($_POST['receipt_footer']  ?? '');
         $show_discount   = isset($_POST['show_discount'])  ? 1 : 0;
-        $show_cashier    = isset($_POST['show_cashier'])   ? 1 : 0;
         $show_order_type = isset($_POST['show_order_type'])? 1 : 0;
+        $show_payment_type = isset($_POST['show_payment_type']) ? 1 : 0;
         $show_beeper     = isset($_POST['show_beeper'])    ? 1 : 0;
 
         $rs_upd = $pdo->prepare("
             UPDATE receipt_settings SET
                 store_address   = ?,
-                store_contact   = ?,
                 fb_page_url     = ?,
                 receipt_header  = ?,
                 receipt_footer  = ?,
                 show_discount   = ?,
-                show_cashier    = ?,
                 show_order_type = ?,
+                show_payment_type = ?,
                 show_beeper     = ?
             WHERE id = 1
         ");
         $rs_upd->execute([
-            $store_address, $store_contact, $fb_page_url,
+            $store_address, $fb_page_url,
             $receipt_header, $receipt_footer,
-            $show_discount, $show_cashier, $show_order_type, $show_beeper,
+            $show_discount, $show_order_type, $show_payment_type, $show_beeper,
         ]);
 
         // Refresh local var
         $receipt['store_address']   = $store_address;
-        $receipt['store_contact']   = $store_contact;
         $receipt['fb_page_url']     = $fb_page_url;
         $receipt['receipt_header']  = $receipt_header;
         $receipt['receipt_footer']  = $receipt_footer;
         $receipt['show_discount']   = $show_discount;
-        $receipt['show_cashier']    = $show_cashier;
         $receipt['show_order_type'] = $show_order_type;
+        $receipt['show_payment_type'] = $show_payment_type;
         $receipt['show_beeper']     = $show_beeper;
 
         $success_msg = 'Receipt settings saved successfully.';
@@ -541,12 +538,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                    value="<?= htmlspecialchars($receipt['fb_page_url'] ?? '') ?>"
                                    placeholder="https://www.facebook.com/...">
                         </div>
-                        <div class="profile-field">
-                            <label class="profile-field__label">Contact Number</label>
-                            <input class="profile-input" type="text" name="store_contact"
-                                   value="<?= htmlspecialchars($receipt['store_contact'] ?? '') ?>"
-                                   placeholder="e.g. 0917-123-4567">
-                        </div>
                         <div class="profile-field profile-field--full">
                             <label class="profile-field__label">Address</label>
                             <input class="profile-input" type="text" name="store_address"
@@ -590,6 +581,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </label>
                         </label>
                         <label class="receipt-toggle-row">
+                            <span class="receipt-toggle-label">Payment type (Cash / GCash)</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="show_payment_type" <?= $receipt['show_payment_type'] ? 'checked' : '' ?>>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </label>
+                        <label class="receipt-toggle-row">
                             <span class="receipt-toggle-label">Beeper number</span>
                             <label class="toggle-switch">
                                 <input type="checkbox" name="show_beeper" <?= $receipt['show_beeper'] ? 'checked' : '' ?>>
@@ -611,11 +609,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php else: ?>
                         <div class="rp-line rp-placeholder" id="rp-address">ADDRESS GOES HERE</div>
                         <?php endif; ?>
-                        <?php if (!empty($receipt['store_contact'])): ?>
-                        <div class="rp-line" id="rp-contact"><?= htmlspecialchars($receipt['store_contact']) ?></div>
-                        <?php else: ?>
-                        <div class="rp-line rp-placeholder" id="rp-contact">CONTACT NUMBER</div>
-                        <?php endif; ?>
 
                         <?php if (!empty($receipt['receipt_header'])): ?>
                         <div class="rp-line rp-header" id="rp-header"><?= htmlspecialchars($receipt['receipt_header']) ?></div>
@@ -627,7 +620,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="rp-info-row">
                             <div class="rp-info-col">
                                 <div id="rp-order-type-row" style="<?= $receipt['show_order_type'] ? '' : 'display:none' ?>">ORDER TYPE: DINE IN</div>
-                                <div>PAYMENT TYPE: CASH</div>
+                                <div id="rp-payment-type-row" style="<?= $receipt['show_payment_type'] ? '' : 'display:none' ?>">PAYMENT TYPE: CASH</div>
                             </div>
                             <div class="rp-info-col rp-info-col--right">
                                 <div>MM - DD - YYYY&nbsp;&nbsp;&nbsp;00:00</div>

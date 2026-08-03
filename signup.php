@@ -197,8 +197,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $confirm     = $_POST['confirm_password'] ?? '';
 
     // Validate
-    if (!$branch_name || !$full_name || !$username || !$password) {
+    if (!$branch_name || !$full_name || !$username || !$email || !$password) {
         $error = 'Please fill in all required fields.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Please enter a valid email address.';
     } elseif (strlen($password) < 8) {
         $error = 'Password must be at least 8 characters.';
     } elseif (!preg_match('/[A-Z]/', $password)) {
@@ -269,10 +271,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <div class="form-group">
-            <label>Email <span style="color:#7A7A5A;font-weight:400;">(optional)</span></label>
+            <label>Email <span style="color:#C0392B;">*</span></label>
             <input type="email" name="email"
                    value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
-                   placeholder="e.g. makati@twistandroll.com">
+                   placeholder="e.g. makati@twistandroll.com" required>
         </div>
 
         <div class="form-group">

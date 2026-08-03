@@ -300,12 +300,12 @@
     }
 
     bindText("store_address",  "rp-address");
-    bindText("store_contact",  "rp-contact");
     bindText("receipt_header", "rp-header");
     bindText("receipt_footer", "rp-footer");
 
     bindToggle("show_discount",   "rp-discount-row");
     bindToggle("show_order_type", "rp-order-type-row");
+    bindToggle("show_payment_type", "rp-payment-type-row");
     bindToggle("show_beeper",     "rp-beeper-row");
   }
 
