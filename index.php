@@ -36,10 +36,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user && password_verify($password, $user['password'])) {
-        $_SESSION["logged_in"]   = true;
-        $_SESSION["username"]    = $username;
-        $_SESSION["user_id"]     = $user['id'];         // ← branch_id = user id
-        $_SESSION["branch_name"] = $user['branch_name'] ?? 'Main Branch';
+        $_SESSION["logged_in"] = true;
+        $_SESSION["username"]  = $username;
+        $_SESSION["user_id"]   = $user['id'];
+        $_SESSION["role"]      = $user['role'] ?? 'admin';
+
+        // branch_id: admins own their branch (branch_id = own id if not set);
+        // cashiers inherit their admin's branch_id set at account creation
+        $branch_id = $user['branch_id'] ?: $user['id'];
+        $_SESSION["branch_id"] = $branch_id;
+
+        if ($_SESSION["role"] === 'admin') {
+            $_SESSION["branch_name"] = $user['branch_name'] ?? 'Main Branch';
+        } else {
+            // cashier: pull branch name from the admin account they belong to
+            $bn_stmt = $pdo->prepare("SELECT branch_name FROM users WHERE id = ?");
+            $bn_stmt->execute([$branch_id]);
+            $_SESSION["branch_name"] = $bn_stmt->fetchColumn() ?: 'Main Branch';
+        }
+
         header("Location: index.php?page=home");
         exit();
     } else {
@@ -54,13 +69,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Twist & Roll — Login</title>
 
- <link rel="manifest" href="/manifest.json">
+ <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1C3924">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="TNR POS">
-    <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
+    <link rel="apple-touch-icon" href="assets/images/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
 
 <style>
@@ -217,9 +232,7 @@ input:focus { border-color: #C8A84B; }
         <button type="submit" class="login-btn">Login</button>
     </form>
 
-    <div class="signup-link">
-        New branch? <a href="signup.php">Register here</a>
-    </div>
+
 </div>
 
 <script>
@@ -239,7 +252,7 @@ function togglePassword() {
 }
 </script>
 
-<script src="/assets/js/pwa_register.js"></script>
+<script src="assets/js/pwa_register.js"></script>
 
 </body>
 </html>

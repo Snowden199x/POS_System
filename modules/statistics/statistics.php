@@ -4,20 +4,28 @@ if (!isset($_SESSION["logged_in"])) {
     exit();
 }
 
-$base_url     = '/Github/POS_SYSTEM/';
+// Admin-only page
+if (($_SESSION["role"] ?? 'admin') !== 'admin') {
+    header("Location: ../../index.php?page=home");
+    exit();
+}
+
+$base_url     = '/Github/POS_System/';
 $current_page = 'statistics';
 
 require_once __DIR__ . '/../../db/connection.php';
 
 // ── Branch filter ─────────────────────────────────────────────────────────
-$branch_id   = $_SESSION['user_id']     ?? 1;
+$branch_id   = $_SESSION['branch_id']   ?? ($_SESSION['user_id'] ?? 1);
 $branch_name = $_SESSION['branch_name'] ?? 'Main Branch';
 $BRANCH      = "AND o.branch_id = {$branch_id}";
 $BRANCH_ONLY = "AND branch_id = {$branch_id}";
 
 
+$role       = $_SESSION['role']    ?? 'admin';
+$my_user_id = $_SESSION['user_id'] ?? $branch_id;
 $stmt_user = $pdo->prepare("SELECT avatar FROM users WHERE id = ?");
-$stmt_user->execute([$branch_id]);
+$stmt_user->execute([$my_user_id]);
 $nav_user = $stmt_user->fetch(PDO::FETCH_ASSOC);
 
 // Dark mode is a global preference set from Profile → Appearance
@@ -274,7 +282,9 @@ $bar_json     = json_encode($bar_data);
         <a href="index.php?page=home"       class="nav-link">Home</a>
         <a href="index.php?page=orders"     class="nav-link">Orders</a>
         <a href="index.php?page=served"     class="nav-link">Served</a>
+        <?php if ($role === 'admin'): ?>
         <a href="index.php?page=statistics" class="nav-link nav-link--active">Statistics</a>
+        <?php endif; ?>
     </nav>
     <div class="navbar__right">
         <div class="navbar__datetime">
@@ -296,6 +306,14 @@ $bar_json     = json_encode($bar_data);
                     </svg>
                     Profile
                 </a>
+                <?php if ($role === 'admin'): ?>
+                <a href="signup.php" class="dropdown-item">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="9" cy="7" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/>
+                    </svg>
+                    Create Cashier
+                </a>
+                <?php endif; ?>
                 <button class="logout-btn" id="logout-btn" data-logout-url="index.php?logout=1">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>

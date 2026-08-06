@@ -52,7 +52,7 @@ const BluetoothPrinter = (function () {
     const FONT_LARGE  = cmd(ESC, 0x21, 0x30);                 // Double width+height
     const FONT_MED    = cmd(ESC, 0x21, 0x10);                 // Double height
     const CUT         = cmd(GS,  0x56, 0x42, 0x00);           // Partial cut
-    const FEED3       = cmd(LF, LF, LF);
+    const FEED2       = cmd(LF, LF);
 
     // Encode a string to Uint8Array (Latin-1 for thermal printers)
     function encode(str) {
@@ -125,7 +125,9 @@ const BluetoothPrinter = (function () {
         const pL = storeLen & 0xFF, pH = (storeLen >> 8) & 0xFF;
 
         const selectModel = cmd(GS, 0x28, 0x6B, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00);
-        const setSize      = cmd(GS, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, 0x06); // module size 6
+        // Module size 7 — smaller than before (8), but not back down to 6,
+        // since 6 was the size originally reported as unscannable.
+        const setSize      = cmd(GS, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, 0x07);
         const setEC        = cmd(GS, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x31); // EC level M
         const storeHeader  = cmd(GS, 0x28, 0x6B, pL, pH, 0x31, 0x50, 0x30);
         const printCmd     = cmd(GS, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30);
@@ -133,8 +135,81 @@ const BluetoothPrinter = (function () {
         return mergeBytes([selectModel, setSize, setEC, storeHeader, data, printCmd]);
     }
 
+    // ── Logo: load a PNG, convert to a 1-bit monochrome bitmap, and build
+    //    the ESC/POS raster image command (GS v 0) to print it ─────────────
+    function loadImage(url) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload  = () => resolve(img);
+            img.onerror = () => reject(new Error('logo image failed to load'));
+            img.src = url;
+        });
+    }
+
+    // Convert a loaded image into an ESC/POS raster bit image command.
+    // maxWidthPx should be a multiple of 8 (raster rows are byte-packed).
+    function imageToRasterCmd(img, maxWidthPx) {
+        let w = img.naturalWidth  || img.width;
+        let h = img.naturalHeight || img.height;
+        if (!w || !h) return new Uint8Array(0);
+
+        // Scale down to fit maxWidthPx, preserving aspect ratio
+        if (w > maxWidthPx) {
+            h = Math.round(h * (maxWidthPx / w));
+            w = maxWidthPx;
+        }
+        // Raster width must be a multiple of 8 (one byte per 8 pixels)
+        w = w - (w % 8);
+        if (w <= 0 || h <= 0) return new Uint8Array(0);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+
+        const { data } = ctx.getImageData(0, 0, w, h);
+        const bytesPerRow = w / 8;
+        const bitmap = new Uint8Array(bytesPerRow * h);
+
+        for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+                const i = (y * w + x) * 4;
+                const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+                // Treat transparent pixels as white (unprinted), otherwise threshold on luminance
+                const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+                const isBlack = a > 40 && luminance < 150;
+                if (isBlack) {
+                    bitmap[y * bytesPerRow + (x >> 3)] |= (0x80 >> (x % 8));
+                }
+            }
+        }
+
+        const xL = bytesPerRow & 0xFF, xH = (bytesPerRow >> 8) & 0xFF;
+        const yL = h & 0xFF,           yH = (h >> 8) & 0xFF;
+        const header = cmd(GS, 0x76, 0x30, 0x00, xL, xH, yL, yH);
+
+        return mergeBytes([header, bitmap]);
+    }
+
+    // Fetch + rasterize the store logo. Returns an empty array (prints nothing,
+    // never throws) if the logo can't be loaded — a missing logo should never
+    // block the rest of the receipt from printing.
+    async function logoRasterBytes(logoUrl) {
+        if (!logoUrl) return new Uint8Array(0);
+        try {
+            const img = await loadImage(logoUrl);
+            return imageToRasterCmd(img, 260); // smaller footprint on paper — was 320px
+        } catch (e) {
+            console.warn('[Printer] Logo not printed:', e.message);
+            return new Uint8Array(0);
+        }
+    }
+
     // ── Build receipt bytes ───────────────────────────────────────────────
-    function buildReceipt(order, settings) {
+    async function buildReceipt(order, settings) {
         const parts = [];
 
         const push = (...arrays) => parts.push(...arrays);
@@ -142,27 +217,32 @@ const BluetoothPrinter = (function () {
         push(INIT);
 
         // ── Header ────────────────────────────────────────────────────────
-        push(ALIGN_CTR, BOLD_ON, FONT_LARGE);
-        push(encode(settings.store_name || 'Twist & Roll'), cmd(LF));
-        push(FONT_NORMAL, BOLD_OFF);
+        push(ALIGN_CTR);
+        const logoUrl = settings.logo_path
+            ? (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + settings.logo_path
+            : null;
+        const logoBytes = await logoRasterBytes(logoUrl);
+        if (logoBytes.length > 0) {
+            push(logoBytes, cmd(LF));
+        } else {
+            // No logo loaded — fall back to the store name as bold text, same as before
+            push(BOLD_ON);
+            push(encode(settings.store_name || 'Twist & Roll'), cmd(LF));
+            push(BOLD_OFF);
+        }
         push(encode((settings.store_name || 'Twist & Roll').toUpperCase()), cmd(LF));
 
         if (settings.store_address) {
             push(encode(settings.store_address), cmd(LF));
         }
-        if (settings.store_contact) {
-            push(encode(settings.store_contact), cmd(LF));
-        }
         if (settings.receipt_header) {
-            push(cmd(LF), BOLD_ON, encode(settings.receipt_header), BOLD_OFF, cmd(LF));
+            push(BOLD_ON, encode(settings.receipt_header), BOLD_OFF, cmd(LF));
         }
 
         push(ALIGN_LEFT);
         push(encode(divider('=', PAPER_WIDTH)), cmd(LF));
 
         // ── Order meta (order type / payment type / date / beeper) ─────────
-        // No cashier name and no branch line — kept lean like the receipt
-        // preview in Profile settings.
         const now = new Date();
         const dateStr = now.toLocaleDateString('en-PH', {
             month: '2-digit', day: '2-digit', year: 'numeric'
@@ -171,12 +251,17 @@ const BluetoothPrinter = (function () {
             hour: '2-digit', minute: '2-digit', hour12: false
         });
 
+        if (settings.show_cashier && settings.cashier_name) {
+            push(encode(padLine('Cashier:', settings.cashier_name, PAPER_WIDTH)), cmd(LF));
+        }
         if (settings.show_order_type) {
             const typeLabel = order.order_type === 'dine-in' ? 'Dine In' : 'Take Out';
             push(encode(padLine('Order Type:', typeLabel, PAPER_WIDTH)), cmd(LF));
         }
         const payMethod = order.payment_method === 'cash' ? 'Cash' : 'GCash';
-        push(encode(padLine('Payment Type:', payMethod, PAPER_WIDTH)), cmd(LF));
+        if (settings.show_payment_type) {
+            push(encode(padLine('Payment Type:', payMethod, PAPER_WIDTH)), cmd(LF));
+        }
         push(encode(padLine('Date:', `${dateStr}  ${timeStr}`, PAPER_WIDTH)), cmd(LF));
 
         if (settings.show_beeper && order.beeper_number) {
@@ -215,9 +300,7 @@ const BluetoothPrinter = (function () {
             push(encode(padLine('Discount', `-${order.discount.toLocaleString()}`, PAPER_WIDTH)), cmd(LF));
         }
 
-        push(BOLD_ON, FONT_MED);
         push(encode(padLine('TOTAL', order.total.toFixed(0), PAPER_WIDTH)), cmd(LF));
-        push(FONT_NORMAL, BOLD_OFF);
 
         if (order.payment_method === 'cash' && order.change_amount > 0) {
             push(encode(padLine('Cash Paid:', `Php ${parseFloat(order.amount_paid).toLocaleString()}`, PAPER_WIDTH)), cmd(LF));
@@ -236,7 +319,6 @@ const BluetoothPrinter = (function () {
         if (settings.receipt_footer) {
             push(encode(settings.receipt_footer), cmd(LF));
         }
-        push(cmd(LF));
 
         // ── QR code linking to the Facebook page ────────────────────────────
         if (settings.fb_page_url) {
@@ -244,10 +326,9 @@ const BluetoothPrinter = (function () {
             push(cmd(LF));
             push(encode(`facebook page: ${settings.store_name || 'Twist & Roll'}`), cmd(LF));
         }
-        push(cmd(LF));
 
         // ── Feed & cut ────────────────────────────────────────────────────
-        push(FEED3);
+        push(FEED2);
         push(CUT);
 
         return mergeBytes(parts);
@@ -263,6 +344,12 @@ const BluetoothPrinter = (function () {
         }
     }
 
+    // ── Public: forget the remembered printer (next connect() shows the full chooser again) ──
+    function forgetDevice() {
+        localStorage.removeItem('twistroll_printer_id');
+        _device = null;
+    }
+
     // ── Connect to printer ────────────────────────────────────────────────
     async function connect() {
         if (!navigator.bluetooth) {
@@ -272,11 +359,30 @@ const BluetoothPrinter = (function () {
             );
         }
 
-        // Request any Bluetooth device that advertises one of our services
-        _device = await navigator.bluetooth.requestDevice({
-            acceptAllDevices: true,
-            optionalServices: CANDIDATE_SERVICES,
-        });
+        const rememberedId = localStorage.getItem('twistroll_printer_id');
+
+        // Try to silently reuse a previously-picked device first — Chrome remembers
+        // Bluetooth permissions per-site, so once the user has picked their printer
+        // once, they shouldn't need to pick it out of a list of every nearby
+        // Bluetooth device again.
+        _device = null;
+        if (rememberedId && navigator.bluetooth.getDevices) {
+            try {
+                const known = await navigator.bluetooth.getDevices();
+                _device = known.find(d => d.id === rememberedId) || null;
+            } catch {
+                _device = null;
+            }
+        }
+
+        // No remembered device (or it's no longer available) — show the picker
+        if (!_device) {
+            _device = await navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: CANDIDATE_SERVICES,
+            });
+            localStorage.setItem('twistroll_printer_id', _device.id);
+        }
 
         _device.addEventListener('gattserverdisconnected', () => {
             _connected = false;
@@ -345,7 +451,7 @@ const BluetoothPrinter = (function () {
     // ── Public: print a receipt ───────────────────────────────────────────
     async function print(order, settings) {
         await ensureConnected();
-        const bytes = buildReceipt(order, settings);
+        const bytes = await buildReceipt(order, settings);
         await sendChunked(_char, bytes);
         console.log('[Printer] Print job sent —', bytes.length, 'bytes');
     }
@@ -364,6 +470,6 @@ const BluetoothPrinter = (function () {
         return _connected && !!_char && !!_device?.gatt?.connected;
     }
 
-    return { print, disconnect, isConnected, connect: ensureConnected };
+    return { print, disconnect, isConnected, connect: ensureConnected, forgetDevice };
 
 })();

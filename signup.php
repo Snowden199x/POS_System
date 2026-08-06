@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Twist & Roll — Register Branch</title>
+<title>Twist &amp; Roll — Create Cashier Account</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -177,28 +177,31 @@ input:-webkit-autofill {
 <?php
 session_start();
 
-// If already logged in go to home
-if (isset($_SESSION['logged_in'])) {
-    header('Location: index.php?page=home');
+// Admin-only page: no session, or not an admin -> back to login
+if (!isset($_SESSION['logged_in']) || ($_SESSION['role'] ?? 'admin') !== 'admin') {
+    header('Location: index.php');
     exit();
 }
 
 require_once __DIR__ . '/db/connection.php';
 
+$admin_branch_id = $_SESSION['branch_id'] ?? $_SESSION['user_id'];
+
 $error   = '';
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $branch_name = trim($_POST['branch_name'] ?? '');
-    $full_name   = trim($_POST['full_name']   ?? '');
-    $username    = trim($_POST['username']    ?? '');
-    $email       = trim($_POST['email']       ?? '');
-    $password    = $_POST['password']         ?? '';
-    $confirm     = $_POST['confirm_password'] ?? '';
+    $full_name = trim($_POST['full_name'] ?? '');
+    $username  = trim($_POST['username']  ?? '');
+    $email     = trim($_POST['email']     ?? '');
+    $password  = $_POST['password']         ?? '';
+    $confirm   = $_POST['confirm_password'] ?? '';
 
     // Validate
-    if (!$branch_name || !$full_name || !$username || !$password) {
+    if (!$full_name || !$username || !$email || !$password) {
         $error = 'Please fill in all required fields.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Please enter a valid email address.';
     } elseif (strlen($password) < 8) {
         $error = 'Password must be at least 8 characters.';
     } elseif (!preg_match('/[A-Z]/', $password)) {
@@ -216,24 +219,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($check->fetch()) {
             $error = 'Username is already taken. Please choose another.';
         } else {
-            // Insert new branch account
+            // Insert new cashier account under this admin's branch
             $hashed = password_hash($password, PASSWORD_BCRYPT);
             $stmt   = $pdo->prepare("
-                INSERT INTO users (branch_name, full_name, username, email, password, status)
-                VALUES (?, ?, ?, ?, ?, 'active')
+                INSERT INTO users (full_name, username, email, password, status, role, branch_id)
+                VALUES (?, ?, ?, ?, 'active', 'cashier', ?)
             ");
-            $stmt->execute([$branch_name, $full_name, $username, $email, $hashed]);
-            $success = 'Branch account created! You can now log in.';
+            $stmt->execute([$full_name, $username, $email, $hashed, $admin_branch_id]);
+            $success = 'Cashier account created. Give them the username and password to log in.';
         }
     }
 }
 ?>
 
 <div class="card">
-    <img src="assets/images/logo.png" class="logo" alt="Twist & Roll">
+    <img src="assets/images/logo.png" class="logo" alt="Twist &amp; Roll">
 
-    <div class="card-title">Register New Branch</div>
-    <div class="card-sub">Create an account for a new branch location</div>
+    <div class="card-title">Create Cashier Account</div>
+    <div class="card-sub">This account will only be able to take orders — no statistics or settings access</div>
 
     <?php if ($error): ?>
     <div class="alert alert--error"><?= htmlspecialchars($error) ?></div>
@@ -242,20 +245,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="alert alert--success"><?= htmlspecialchars($success) ?></div>
     <?php endif; ?>
 
-    <?php if (!$success): ?>
     <form class="form" method="POST">
 
         <div class="form-group">
-            <label>Branch Name <span style="color:#C0392B;">*</span></label>
-            <input type="text" name="branch_name"
-                   value="<?= htmlspecialchars($_POST['branch_name'] ?? '') ?>"
-                   placeholder="e.g. Twist & Roll — Makati Branch" required>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="form-group">
-            <label>Cashier / Manager Full Name <span style="color:#C0392B;">*</span></label>
+            <label>Cashier Full Name <span style="color:#C0392B;">*</span></label>
             <input type="text" name="full_name"
                    value="<?= htmlspecialchars($_POST['full_name'] ?? '') ?>"
                    placeholder="e.g. Juan dela Cruz" required>
@@ -265,14 +258,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <label>Username <span style="color:#C0392B;">*</span></label>
             <input type="text" name="username"
                    value="<?= htmlspecialchars($_POST['username'] ?? '') ?>"
-                   placeholder="e.g. makati_branch" required>
+                   placeholder="e.g. juan_cashier" required>
         </div>
 
         <div class="form-group">
-            <label>Email <span style="color:#7A7A5A;font-weight:400;">(optional)</span></label>
+            <label>Email <span style="color:#C0392B;">*</span></label>
             <input type="email" name="email"
                    value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
-                   placeholder="e.g. makati@twistandroll.com">
+                   placeholder="e.g. juan@example.com" required>
         </div>
 
         <div class="form-group">
@@ -309,12 +302,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
-        <button type="submit" class="btn-submit">Create Branch Account</button>
+        <button type="submit" class="btn-submit">Create Cashier Account</button>
     </form>
-    <?php endif; ?>
 
     <div class="login-link">
-        Already have an account? <a href="index.php">Log in</a>
+        <a href="index.php?page=home">← Back to Dashboard</a>
     </div>
 </div>
 
