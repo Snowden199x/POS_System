@@ -9,7 +9,7 @@ if (!isset($_SESSION["logged_in"])) {
 require_once __DIR__ . '/../../db/connection.php';
 header('Content-Type: application/json');
 
-$branch_id = $_SESSION['user_id'] ?? 1;
+$branch_id = $_SESSION['branch_id'] ?? ($_SESSION['user_id'] ?? 1);
 $data      = json_decode(file_get_contents('php://input'), true);
 
 if (!isset($data['order_id'])) {

@@ -116,6 +116,25 @@ const BluetoothPrinter = (function () {
         return out;
     }
 
+    // ── ESC/POS native QR code (GS ( k — 2D barcode, model 2) ─────────────
+    // Supported by the large majority of generic 58mm ESC/POS printers.
+    function qrCode(url) {
+        if (!url) return new Uint8Array(0);
+        const data     = encode(url);
+        const storeLen = data.length + 3;
+        const pL = storeLen & 0xFF, pH = (storeLen >> 8) & 0xFF;
+
+        const selectModel = cmd(GS, 0x28, 0x6B, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00);
+        // Module size 7 — smaller than before (8), but not back down to 6,
+        // since 6 was the size originally reported as unscannable.
+        const setSize      = cmd(GS, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, 0x07);
+        const setEC        = cmd(GS, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x31); // EC level M
+        const storeHeader  = cmd(GS, 0x28, 0x6B, pL, pH, 0x31, 0x50, 0x30);
+        const printCmd     = cmd(GS, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30);
+
+        return mergeBytes([selectModel, setSize, setEC, storeHeader, data, printCmd]);
+    }
+
     // ── Logo: load a PNG, convert to a 1-bit monochrome bitmap, and build
     //    the ESC/POS raster image command (GS v 0) to print it ─────────────
     function loadImage(url) {
@@ -224,8 +243,6 @@ const BluetoothPrinter = (function () {
         push(encode(divider('=', PAPER_WIDTH)), cmd(LF));
 
         // ── Order meta (order type / payment type / date / beeper) ─────────
-        // No cashier name and no branch line — kept lean like the receipt
-        // preview in Profile settings.
         const now = new Date();
         const dateStr = now.toLocaleDateString('en-PH', {
             month: '2-digit', day: '2-digit', year: 'numeric'
@@ -234,6 +251,9 @@ const BluetoothPrinter = (function () {
             hour: '2-digit', minute: '2-digit', hour12: false
         });
 
+        if (settings.show_cashier && settings.cashier_name) {
+            push(encode(padLine('Cashier:', settings.cashier_name, PAPER_WIDTH)), cmd(LF));
+        }
         if (settings.show_order_type) {
             const typeLabel = order.order_type === 'dine-in' ? 'Dine In' : 'Take Out';
             push(encode(padLine('Order Type:', typeLabel, PAPER_WIDTH)), cmd(LF));
@@ -253,7 +273,7 @@ const BluetoothPrinter = (function () {
         push(encode(divider('-', PAPER_WIDTH)), cmd(LF));
 
         // ── Items (Item / Qty / Price columns) ──────────────────────────────
-        const COLS = [18, 5, 9]; // sums to PAPER_WIDTH (32)
+        const COLS = [16, 6, 10]; // sums to PAPER_WIDTH (32)
 
         push(BOLD_ON);
         push(encode(padCols(['Item', 'Qty', 'Price'], COLS)), cmd(LF));
@@ -300,8 +320,10 @@ const BluetoothPrinter = (function () {
             push(encode(settings.receipt_footer), cmd(LF));
         }
 
-        // ── Facebook page (text only — QR code removed) ─────────────────────
+        // ── QR code linking to the Facebook page ────────────────────────────
         if (settings.fb_page_url) {
+            push(qrCode(settings.fb_page_url));
+            push(cmd(LF));
             push(encode(`facebook page: ${settings.store_name || 'Twist & Roll'}`), cmd(LF));
         }
 

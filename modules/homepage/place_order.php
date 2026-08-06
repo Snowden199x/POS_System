@@ -11,8 +11,8 @@ if (!$data || empty($data['items'])) {
     exit();
 }
 
-// ── Branch ID comes from session (user_id = branch_id) ────────────────────
-$branch_id = $_SESSION['user_id'] ?? 1;
+// ── Branch ID comes from session (shared by admin + their cashiers) ───────
+$branch_id = $_SESSION['branch_id'] ?? ($_SESSION['user_id'] ?? 1);
 
 try {
     $beeperCheck = $pdo->prepare("

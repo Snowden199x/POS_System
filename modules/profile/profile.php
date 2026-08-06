@@ -6,17 +6,19 @@ if (!isset($_SESSION["logged_in"])) {
     exit();
 }
 
-$base_url     = '/Github/POS_SYSTEM/';
+$base_url     = '/Github/POS_System/';
 $current_page = 'profile';
 
 require_once __DIR__ . '/../../db/connection.php';
 
 // ── Branch ────────────────────────────────────────────────────────────────
-$branch_id = $_SESSION['user_id'] ?? 1;
+$my_user_id  = $_SESSION['user_id']     ?? 1;
+$branch_id   = $_SESSION['branch_id']   ?? $my_user_id; // used only for role-gated sections below
+$role        = $_SESSION['role']        ?? 'admin';
 
 // ── Fetch user ─────────────────────────────────────────────────────────────
 $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
-$stmt->execute([$branch_id]);
+$stmt->execute([$my_user_id]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$user) {
     $user = ['id'=>1,'full_name'=>'Admin','username'=>'admin',
@@ -54,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $phone     = trim($_POST['phone']     ?? '');
 
         $stmt = $pdo->prepare("UPDATE users SET full_name=?, username=?, email=?, phone=? WHERE id=?");
-        $stmt->execute([$full_name, $username, $email, $phone, $branch_id]);
+        $stmt->execute([$full_name, $username, $email, $phone, $my_user_id]);
 
         $_SESSION['username']  = $username;
         $user['full_name']     = $full_name;
@@ -72,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $confirm = $_POST['confirm_password'] ?? '';
 
         $pw_stmt = $pdo->prepare("SELECT password FROM users WHERE id = ?");
-        $pw_stmt->execute([$branch_id]);
+        $pw_stmt->execute([$my_user_id]);
         $pw_row = $pw_stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$pw_row || !password_verify($current, $pw_row['password'])) {
@@ -90,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $hashed = password_hash($new_pw, PASSWORD_BCRYPT);
             $upd = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
-            $upd->execute([$hashed, $branch_id]);
+            $upd->execute([$hashed, $my_user_id]);
             $success_msg = 'Password updated successfully.';
         }
     }
@@ -105,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (move_uploaded_file($_FILES['avatar']['tmp_name'], $dest)) {
                 $avatar_path = $base_url . 'assets/images/avatars/' . $filename;
                 $upd = $pdo->prepare("UPDATE users SET avatar=? WHERE id=?");
-                $upd->execute([$avatar_path, $branch_id]);
+                $upd->execute([$avatar_path, $my_user_id]);
                 $user['avatar'] = $avatar_path;
                 $success_msg    = 'Avatar updated successfully.';
             }
@@ -113,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // ── Upload Store Logo ──────────────────────────────────────────────────
-    if (isset($_POST['action']) && $_POST['action'] === 'upload_logo') {
+    if ($role === 'admin' && isset($_POST['action']) && $_POST['action'] === 'upload_logo') {
         if (!empty($_FILES['logo']['name'])) {
             $ext      = pathinfo($_FILES['logo']['name'], PATHINFO_EXTENSION);
             $filename = 'logo_' . time() . '.' . $ext;
@@ -130,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // ── Toggle Dark Mode (instant save, own section) ────────────────────────
-    if (isset($_POST['action']) && $_POST['action'] === 'toggle_dark_mode') {
+    if ($role === 'admin' && isset($_POST['action']) && $_POST['action'] === 'toggle_dark_mode') {
         $dark_mode = !empty($_POST['dark_mode']) ? 1 : 0;
         $pdo->prepare("UPDATE receipt_settings SET dark_mode = ? WHERE id = 1")->execute([$dark_mode]);
         header('Content-Type: application/json');
@@ -139,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // ── Save Receipt Settings ──────────────────────────────────────────────
-    if (isset($_POST['action']) && $_POST['action'] === 'save_receipt') {
+    if ($role === 'admin' && isset($_POST['action']) && $_POST['action'] === 'save_receipt') {
         $store_address   = trim($_POST['store_address']   ?? '');
         $fb_page_url     = trim($_POST['fb_page_url']      ?? '');
         $receipt_header  = trim($_POST['receipt_header']  ?? '');
@@ -207,7 +209,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <a href="index.php?page=home"       class="nav-link">Home</a>
         <a href="index.php?page=orders"     class="nav-link">Orders</a>
         <a href="index.php?page=served"     class="nav-link">Served</a>
+        <?php if ($role === 'admin'): ?>
         <a href="index.php?page=statistics" class="nav-link">Statistics</a>
+        <?php endif; ?>
         <a href="index.php?page=profile"    class="nav-link nav-link--active">Profile</a>
     </nav>
     <div class="navbar__right">
@@ -231,6 +235,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </svg>
                     Profile
                 </a>
+                <?php if ($role === 'admin'): ?>
+                <a href="signup.php" class="dropdown-item">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="9" cy="7" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/>
+                    </svg>
+                    Create Cashier
+                </a>
+                <?php endif; ?>
                 <div class="dropdown-divider"></div>
                 <button class="dropdown-item dropdown-item--danger" id="logout-btn" data-logout-url="index.php?logout=1">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -325,6 +337,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </svg>
                 Change Password
             </button>
+            <?php if ($role === 'admin'): ?>
             <button class="profile-btn-secondary" id="open-receipt-btn">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -334,6 +347,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </svg>
                 Receipt Settings
             </button>
+            <?php endif; ?>
         </div>
 
         <!-- ── RIGHT: Panels ── -->
@@ -489,6 +503,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <!-- ══════════════════════════════════════════════
                  RECEIPT SETTINGS CARD
                  ══════════════════════════════════════════════ -->
+            <?php if ($role === 'admin'): ?>
             <div class="profile-card" id="receipt-card">
                 <div class="profile-card__header">
                     <div class="profile-card__header-left">
@@ -695,6 +710,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </label>
                 </div>
             </div>
+
+            <?php endif; ?>
 
             <!-- ── Danger Zone ── -->
             <div class="profile-card profile-card--danger">

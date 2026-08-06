@@ -28,8 +28,10 @@ try {
         ];
     }
 
-    // Also fetch the cashier name (full_name from users table)
-    $user_stmt = $pdo->query("SELECT full_name FROM users WHERE id = 1");
+    // Also fetch the cashier name (full_name from users table) — the actual logged-in account
+    $current_user_id = $_SESSION['user_id'] ?? 1;
+    $user_stmt = $pdo->prepare("SELECT full_name FROM users WHERE id = ?");
+    $user_stmt->execute([$current_user_id]);
     $user = $user_stmt->fetch(PDO::FETCH_ASSOC);
     $settings['cashier_name'] = $user['full_name'] ?? '';
 

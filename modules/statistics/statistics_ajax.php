@@ -27,7 +27,7 @@ if (
     $BIZ_MONTH = "MONTH(CONVERT_TZ(created_at,'+00:00','+08:00') - INTERVAL 5 HOUR)";
 
     // ── Branch / merge ────────────────────────────────────────────────────
-    $branch_id = (int)($_SESSION['user_id'] ?? 1);
+    $branch_id = (int)($_SESSION['branch_id'] ?? ($_SESSION['user_id'] ?? 1));
     $merge     = isset($_GET['merge']) && $_GET['merge'] === '1';
 
     // ── EXCEL REPORT ────────────────────────────────────────────────────
