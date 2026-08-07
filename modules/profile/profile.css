@@ -574,27 +574,6 @@ body {
     object-fit: contain;
 }
 
-.rp-qr-wrap {
-    text-align: center;
-    margin-top: 10px;
-}
-
-.rp-qr {
-    display: inline-block;
-    line-height: 0;
-    margin-bottom: 6px;
-}
-
-.rp-qr svg {
-    width: 78px;
-    height: 78px;
-}
-
-.rp-fb-caption {
-    font-size: clamp(9px, 0.64vw, 10.6px);
-    text-transform: none;
-}
-
 /* ── STORE LOGO UPLOAD ────────────────────── */
 .logo-upload-row {
     display: flex;

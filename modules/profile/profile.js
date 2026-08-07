@@ -239,38 +239,6 @@
     });
   }
 
-  // ── FACEBOOK QR CODE ─────────────────────────────────────────────────────
-  function renderFbQr(url) {
-    const qrWrap = document.getElementById("rp-qr-wrap");
-    const qrBox  = document.getElementById("rp-qr");
-    if (!qrWrap || !qrBox) return;
-
-    if (!url) {
-      qrWrap.style.display = "none";
-      return;
-    }
-    qrWrap.style.display = "";
-    qrBox.innerHTML = "";
-    if (typeof qrcode !== "function") return; // library not loaded, skip quietly
-
-    try {
-      const qr = qrcode(0, "M"); // type 0 = auto-detect smallest size
-      qr.addData(url);
-      qr.make();
-      qrBox.innerHTML = qr.createSvgTag({ cellSize: 3, margin: 2, scalable: true });
-    } catch (err) {
-      qrWrap.style.display = "none";
-    }
-  }
-
-  const initialFbUrl = document.getElementById("rp-qr-wrap")?.dataset.fbUrl || "";
-  renderFbQr(initialFbUrl);
-
-  const fbUrlInput = document.querySelector('[name="fb_page_url"]');
-  if (fbUrlInput) {
-    fbUrlInput.addEventListener("input", () => renderFbQr(fbUrlInput.value.trim()));
-  }
-
   // ══════════════════════════════════════════════════════════════════════
   //  RECEIPT PREVIEW — live update as user types
   // ══════════════════════════════════════════════════════════════════════

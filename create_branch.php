@@ -62,7 +62,7 @@ require_once __DIR__ . '/db/connection.php';
 // Share it only with whoever is authorized to open a new branch (e.g. you,
 // the business owner) — never put it on a public page or in a group chat
 // that isn't private.
-$SETUP_KEY = 'tnr-setup-key';
+$SETUP_KEY = 'change-this-secret-key';
 
 $error   = '';
 $success = '';
