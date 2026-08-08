@@ -11,6 +11,13 @@ if (!$data || empty($data['items'])) {
     exit();
 }
 
+// ── Beeper number must be within 1-16 ──────────────────────────────────────
+$beeper_number = (int)($data['beeper_number'] ?? 0);
+if ($beeper_number < 1 || $beeper_number > 16) {
+    echo json_encode(['success' => false, 'message' => 'Beeper number must be between 1 and 16.']);
+    exit();
+}
+
 // ── Branch ID comes from session (shared by admin + their cashiers) ───────
 $branch_id = $_SESSION['branch_id'] ?? ($_SESSION['user_id'] ?? 1);
 
@@ -19,7 +26,7 @@ try {
         SELECT id FROM orders
         WHERE beeper_number = ? AND status = 'pending' AND branch_id = ?
     ");
-    $beeperCheck->execute([$data['beeper_number'], $branch_id]);
+    $beeperCheck->execute([$beeper_number, $branch_id]);
     if ($beeperCheck->fetch()) {
         echo json_encode(['success' => false, 'message' => 'beeper_in_use']);
         exit();
@@ -41,7 +48,7 @@ try {
     ");
     $stmt->execute([
         $branch_id,
-        $data['beeper_number'],
+        $beeper_number,
         $data['order_type'],
         $data['payment_method'],
         $data['amount_paid'],

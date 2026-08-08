@@ -143,7 +143,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ── Save Receipt Settings ──────────────────────────────────────────────
     if ($role === 'admin' && isset($_POST['action']) && $_POST['action'] === 'save_receipt') {
         $store_address   = trim($_POST['store_address']   ?? '');
-        $fb_page_url     = trim($_POST['fb_page_url']      ?? '');
         $receipt_header  = trim($_POST['receipt_header']  ?? '');
         $receipt_footer  = trim($_POST['receipt_footer']  ?? '');
         $show_discount   = isset($_POST['show_discount'])  ? 1 : 0;
@@ -154,7 +153,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $rs_upd = $pdo->prepare("
             UPDATE receipt_settings SET
                 store_address   = ?,
-                fb_page_url     = ?,
                 receipt_header  = ?,
                 receipt_footer  = ?,
                 show_discount   = ?,
@@ -164,14 +162,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             WHERE id = 1
         ");
         $rs_upd->execute([
-            $store_address, $fb_page_url,
+            $store_address,
             $receipt_header, $receipt_footer,
             $show_discount, $show_order_type, $show_payment_type, $show_beeper,
         ]);
 
         // Refresh local var
         $receipt['store_address']   = $store_address;
-        $receipt['fb_page_url']     = $fb_page_url;
         $receipt['receipt_header']  = $receipt_header;
         $receipt['receipt_footer']  = $receipt_footer;
         $receipt['show_discount']   = $show_discount;
@@ -548,12 +545,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <p class="receipt-section-label" style="margin-top:18px;">Store Information</p>
                     <div class="profile-fields profile-fields--2col">
                         <div class="profile-field profile-field--full">
-                            <label class="profile-field__label">Facebook Page URL <span class="label-optional">(shown as a QR code on the receipt)</span></label>
-                            <input class="profile-input" type="url" name="fb_page_url"
-                                   value="<?= htmlspecialchars($receipt['fb_page_url'] ?? '') ?>"
-                                   placeholder="https://www.facebook.com/...">
-                        </div>
-                        <div class="profile-field profile-field--full">
                             <label class="profile-field__label">Address</label>
                             <input class="profile-input" type="text" name="store_address"
                                    value="<?= htmlspecialchars($receipt['store_address'] ?? '') ?>"
@@ -660,18 +651,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="rp-divider"></div>
                         <div class="rp-thankyou">THANK YOU !!!</div>
                         <div class="rp-footer" id="rp-footer"><?= htmlspecialchars($receipt['receipt_footer'] ?? 'Follow us for updates, promos, and new menu items.') ?></div>
-
-                        <?php if (!empty($receipt['fb_page_url'])): ?>
-                        <div class="rp-qr-wrap" id="rp-qr-wrap" data-fb-url="<?= htmlspecialchars($receipt['fb_page_url']) ?>">
-                            <div class="rp-qr" id="rp-qr"></div>
-                            <div class="rp-line rp-fb-caption">facebook page: <?= htmlspecialchars($receipt['store_name'] ?? 'Twist & Roll') ?></div>
-                        </div>
-                        <?php else: ?>
-                        <div class="rp-qr-wrap" id="rp-qr-wrap" data-fb-url="" style="display:none;">
-                            <div class="rp-qr" id="rp-qr"></div>
-                            <div class="rp-line rp-fb-caption">facebook page: <?= htmlspecialchars($receipt['store_name'] ?? 'Twist & Roll') ?></div>
-                        </div>
-                        <?php endif; ?>
                     </div>
 
                     <div class="profile-form-actions profile-form-actions--right" style="margin-top:18px;">
@@ -740,8 +719,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div><!-- /.profile-layout -->
 </div><!-- /.profile-page -->
 
-<script src="<?= $base_url ?>assets/js/vendor/qrcode.js"></script>
-<script src="<?= $base_url ?>assets/js/vendor/qrcode_UTF8.js"></script>
 <script src="<?= $base_url ?>modules/profile/profile.js"></script>
 <script src="/assets/js/pwa_register.js"></script>
 </body>

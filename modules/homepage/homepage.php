@@ -208,7 +208,7 @@ foreach ($disc_stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
 
         <div class="order-panel__beeper" id="beeper-wrap">
             <label class="beeper-label" for="beeper-input">Beeper #</label>
-            <input type="number" class="beeper-input" id="beeper-input" min="1" placeholder="Enter number">
+            <input type="number" class="beeper-input" id="beeper-input" min="1" max="16" placeholder="Enter number (1-16)">
         </div>
         <p class="beeper-error-msg" id="beeper-error">Beeper number is required.</p>
 

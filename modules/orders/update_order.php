@@ -17,6 +17,12 @@ if (!$data || empty($data['order_id'])) {
     exit();
 }
 
+$beeper_number = (int)($data['beeper_number'] ?? 0);
+if ($beeper_number < 1 || $beeper_number > 16) {
+    echo json_encode(['success' => false, 'message' => 'Beeper number must be between 1 and 16.']);
+    exit();
+}
+
 try {
     $pdo->beginTransaction();
 
@@ -61,7 +67,7 @@ try {
         WHERE id = ? AND branch_id = ?
     ");
     $stmt->execute([
-        $data['beeper_number'],
+        $beeper_number,
         $data['order_type'],
         $data['payment_method'],
         $data['amount_paid'] ?? $data['total'],
