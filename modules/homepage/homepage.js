@@ -95,20 +95,23 @@
     }
 
     // ── Auto-incrementing beeper number ─────────────────────────────────────
-    // Starts at 1. After each order is placed, the NEXT suggested beeper is
-    // whatever was just used + 1 — whether that number was auto-filled or
-    // typed in manually by the cashier. e.g. beeper is at #5, cashier types
-    // #1 for the next order -> the order after that suggests #2. Types #3 ->
-    // the one after suggests #4. Persisted across reloads via localStorage.
+    // Starts at 1, wraps back to 1 after 16. After each order is placed, the
+    // NEXT suggested beeper is whatever was just used + 1 — whether that
+    // number was auto-filled or typed in manually by the cashier. e.g.
+    // beeper is at #5, cashier types #1 for the next order -> the order
+    // after that suggests #2. Types #3 -> the one after suggests #4.
+    // Persisted across reloads via localStorage.
+    const BEEPER_MAX = 16;
     const BEEPER_STORAGE_KEY = 'twistroll_next_beeper';
 
     function getNextBeeper() {
         const v = parseInt(localStorage.getItem(BEEPER_STORAGE_KEY), 10);
-        return (!isNaN(v) && v > 0) ? v : 1;
+        return (!isNaN(v) && v >= 1 && v <= BEEPER_MAX) ? v : 1;
     }
 
     function setNextBeeper(v) {
-        try { localStorage.setItem(BEEPER_STORAGE_KEY, String(v)); } catch (e) { /* storage unavailable */ }
+        const wrapped = v > BEEPER_MAX ? 1 : v;
+        try { localStorage.setItem(BEEPER_STORAGE_KEY, String(wrapped)); } catch (e) { /* storage unavailable */ }
     }
 
     function updateOrderTypeBadge(type) {
@@ -274,7 +277,7 @@
         const isGcash   = state.paymentMethod === 'gcash';
 
         let canPlace = hasItems;
-        if (!beeper || parseInt(beeper) < 1) canPlace = false;
+        if (!beeper || parseInt(beeper) < 1 || parseInt(beeper) > BEEPER_MAX) canPlace = false;
         if (isCash) {
             const amount = parseFloat(amountInput.value) || 0;
             if (amount <= 0 || amount < total) canPlace = false;
@@ -339,10 +342,22 @@
 
     // ── Beeper input ────────────────────────────────────────────────────────
     beeperInput.addEventListener('input', () => {
+        // Hard-clamp: strip anything that would push the value past 16
+        if (beeperInput.value !== '') {
+            let num = parseInt(beeperInput.value, 10);
+            if (!isNaN(num) && num > BEEPER_MAX) {
+                beeperInput.value = String(BEEPER_MAX);
+            }
+        }
+
         const val = beeperInput.value.trim();
-        if (!val || parseInt(val) < 1) {
+        const num = parseInt(val, 10);
+        if (!val || num < 1 || num > BEEPER_MAX) {
             beeperWrap.classList.add('beeper-error');
             beeperError.classList.add('visible');
+            beeperError.textContent = (num > BEEPER_MAX)
+                ? `Beeper number must be 1-${BEEPER_MAX}.`
+                : 'Beeper number is required.';
         } else {
             beeperWrap.classList.remove('beeper-error');
             beeperError.classList.remove('visible');
@@ -506,9 +521,12 @@
         const amount   = parseFloat(amountInput.value) || 0;
         const gcashRef = gcashRefInput ? gcashRefInput.value.trim() : '';
 
-        if (!beeper || parseInt(beeper) < 1) {
+        if (!beeper || parseInt(beeper) < 1 || parseInt(beeper) > BEEPER_MAX) {
             beeperWrap.classList.add('beeper-error');
             beeperError.classList.add('visible');
+            beeperError.textContent = (parseInt(beeper) > BEEPER_MAX)
+                ? `Beeper number must be 1-${BEEPER_MAX}.`
+                : 'Beeper number is required.';
             beeperInput.focus();
             return;
         }
